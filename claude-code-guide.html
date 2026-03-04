@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🤖 Claude Code 完全入门指南</title>
+  <style>
+    :root {
+      --accent: #d97706;
+      --accent-light: #fef3c7;
+      --accent-mid: #fde68a;
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3248;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --green: #34d399;
+      --green-bg: #064e3b22;
+      --blue: #60a5fa;
+      --blue-bg: #1e3a5f22;
+      --red: #f87171;
+      --red-bg: #7f1d1d22;
+      --yellow: #fbbf24;
+      --yellow-bg: #78350f22;
+      --code-bg: #0d1117;
+      --radius: 10px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 60%, #1a1325 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 56px 24px 48px;
+      text-align: center;
+    }
+    header .robot { font-size: 56px; display: block; margin-bottom: 16px; }
+    header h1 {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 700;
+      background: linear-gradient(90deg, #f59e0b, #fde68a, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    header .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      letter-spacing: 0.05em;
+    }
+    header .intro-box {
+      max-width: 640px;
+      margin: 28px auto 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      text-align: left;
+      font-size: 15px;
+      color: var(--text-muted);
+    }
+    header .intro-box strong { color: var(--text); }
+
+    /* ── Layout ── */
+    .wrapper {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      max-width: 1100px;
+      margin: 0 auto;
+      gap: 0;
+    }
+
+    /* ── Sidebar TOC ── */
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 32px 0 32px 24px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    nav .toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    nav a {
+      display: block;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      padding: 5px 12px 5px 0;
+      border-radius: 6px;
+      transition: color 0.15s;
+      line-height: 1.4;
+    }
+    nav a:hover { color: var(--accent); }
+    nav a.active { color: var(--accent); font-weight: 600; }
+    nav .toc-num {
+      display: inline-block;
+      width: 20px;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    /* ── Main content ── */
+    main {
+      padding: 48px 48px 80px;
+      min-width: 0;
+    }
+
+    section {
+      margin-bottom: 60px;
+      scroll-margin-top: 24px;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .sec-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      color: #000;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 28px 0 12px;
+    }
+    h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 20px 0 10px;
+    }
+
+    p { margin-bottom: 14px; color: var(--text); }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    strong { color: var(--text); font-weight: 600; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 14.5px;
+      border-left: 4px solid;
+      display: flex;
+      gap: 10px;
+    }
+    .callout .icon { flex-shrink: 0; font-size: 18px; }
+    .callout.tip  { background: var(--blue-bg);   border-color: var(--blue);   color: #93c5fd; }
+    .callout.warn { background: var(--yellow-bg);  border-color: var(--yellow); color: #fcd34d; }
+    .callout.info { background: var(--green-bg);   border-color: var(--green);  color: #6ee7b7; }
+    .callout.danger{ background: var(--red-bg);    border-color: var(--red);    color: #fca5a5; }
+    .callout a { color: inherit; text-decoration: underline; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+    th {
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    td { padding: 10px 16px; border-top: 1px solid var(--border); color: var(--text); }
+    tr:hover td { background: var(--surface2); }
+
+    /* ── Code ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      position: relative;
+    }
+    pre code {
+      font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+      font-size: 13.5px;
+      color: #e2e8f0;
+      background: none;
+      padding: 0;
+    }
+    code {
+      font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 13px;
+      color: #fbbf24;
+    }
+
+    /* Copy button */
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+    .copy-btn.copied { background: var(--green); color: #000; border-color: var(--green); }
+
+    /* ── OS Tab switcher ── */
+    .os-tabs { display: flex; gap: 8px; margin-bottom: 0; }
+    .os-tab {
+      padding: 8px 20px;
+      border-radius: 8px 8px 0 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .os-tab:hover { color: var(--text); }
+    .os-tab.active { background: var(--surface); color: var(--accent); font-weight: 600; }
+    .os-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius) var(--radius) var(--radius);
+      padding: 20px;
+    }
+    .os-panel.active { display: block; }
+
+    /* ── Comparison grid ── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .compare-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .compare-card.highlight { border-color: var(--accent); }
+    .compare-card h4 { margin-top: 0; }
+    .compare-card ul { padding-left: 0; list-style: none; }
+    .compare-card li { padding: 4px 0; font-size: 14px; color: var(--text-muted); }
+    .compare-card li::before { content: "• "; color: var(--accent); }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; margin: 16px 0; }
+    .step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      color: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      margin-top: 2px;
+    }
+    .step-body { flex: 1; min-width: 0; }
+    .step-body strong { display: block; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+
+    /* ── Prompt examples ── */
+    .prompt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .prompt-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .prompt-card:hover { border-color: var(--accent); color: var(--text); }
+    .prompt-card .copy-hint {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 11px;
+      color: var(--text-dim);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .prompt-card:hover .copy-hint { opacity: 1; }
+
+    /* ── FAQ accordion ── */
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    summary {
+      padding: 16px 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+";
+      font-size: 20px;
+      color: var(--accent);
+      font-weight: 400;
+      transition: transform 0.2s;
+    }
+    details[open] summary::after { content: "−"; }
+    details[open] summary { color: var(--accent); border-bottom: 1px solid var(--border); }
+    .faq-body { padding: 16px 20px; font-size: 14.5px; color: var(--text-muted); }
+    .faq-body p, .faq-body ol, .faq-body ul { margin-bottom: 10px; }
+    .faq-body ol, .faq-body ul { padding-left: 20px; }
+    .faq-body li { margin-bottom: 4px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-dim);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--text-dim); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .wrapper { grid-template-columns: 1fr; }
+      nav { display: none; }
+      main { padding: 24px 20px 60px; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .prompt-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="robot">🤖</span>
+  <h1>Claude Code 完全入门指南</h1>
+  <p class="subtitle">面向非开发者 &nbsp;·&nbsp; 零基础也能学会 &nbsp;·&nbsp; 中文版</p>
+  <div class="intro-box">
+    <strong>📌 本指南适合谁？</strong><br>
+    如果你完全不懂编程，也没有使用过命令行/终端，这份指南就是为你量身定制的。我们会用最通俗的语言，带你一步步上手 Claude Code。
+  </div>
+</header>
+
+<div class="wrapper">
+
+  <!-- ── Sidebar ── -->
+  <nav id="toc">
+    <div class="toc-title">目录</div>
+    <a href="#s1"><span class="toc-num">1.</span>什么是 Claude Code？</a>
+    <a href="#s2"><span class="toc-num">2.</span>准备 API Key</a>
+    <a href="#s3"><span class="toc-num">3.</span>一键安装（推荐）</a>
+    <a href="#s4"><span class="toc-num">4.</span>手动安装步骤</a>
+    <a href="#s5"><span class="toc-num">5.</span>首次启动和登录</a>
+    <a href="#s6"><span class="toc-num">6.</span>如何使用</a>
+    <a href="#s7"><span class="toc-num">7.</span>实用示例</a>
+    <a href="#s8"><span class="toc-num">8.</span>常见问题</a>
+    <a href="#s9"><span class="toc-num">9.</span>遇到问题？</a>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <!-- 重要提示 -->
+    <div class="callout tip" style="margin-bottom:32px;border:2px solid var(--accent);background:linear-gradient(135deg, var(--accent-light)11, var(--surface) 100%);">
+      <span class="icon" style="font-size:24px;">🚀</span>
+      <div>
+        <strong style="font-size:16px;color:var(--accent);">新手必看：使用一键安装脚本，3分钟搞定所有配置！</strong><br>
+        本教程提供的<a href="#s3" style="color:var(--accent);font-weight:700;text-decoration:underline;">一键安装脚本</a>会自动完成：
+        <ul style="margin:8px 0 0 20px;color:var(--text);">
+          <li>✅ 自动安装 Claude Code</li>
+          <li>✅ 自动配置环境变量（API Key、Base URL）</li>
+          <li>✅ 自动创建配置文件（绕过强制登录）</li>
+          <li>✅ 全程中文引导，无需手动输入命令</li>
+        </ul>
+        <strong style="color:var(--text);">教程中标注"手动配置"的部分，使用脚本后都无需操作！</strong>
+      </div>
+    </div>
+
+    <!-- S1 -->
+    <section id="s1">
+      <h2><span class="sec-num">1</span>什么是 Claude Code？</h2>
+
+      <p>Claude Code 是 Anthropic 推出的一款 <strong>AI 编程助手</strong>，你可以通过"终端"（也叫"命令行"）来使用它。</p>
+
+      <p><strong>但等等——我不会写代码啊！</strong></p>
+      <p>没关系。Claude Code 的厉害之处在于，<strong>你只需要用自然语言告诉它你想做什么</strong>，它会帮你完成。比如：</p>
+      <ul style="list-style:none;padding:0;margin:12px 0;">
+        <li style="padding:6px 0;">🗂️ &nbsp;"帮我整理一下这个文件夹里的图片"</li>
+        <li style="padding:6px 0;">📊 &nbsp;"帮我分析这份 Excel 数据，找出规律"</li>
+        <li style="padding:6px 0;">📝 &nbsp;"帮我写一段代码，自动发送邮件提醒"</li>
+        <li style="padding:6px 0;">🔍 &nbsp;"帮我看看我的项目代码有没有问题"</li>
+      </ul>
+      <p>Claude Code 就是你的 AI 程序员助手，而你是它的老板，用中文下达指令就行。</p>
+
+      <h3>和 Claude 网页版有什么区别？</h3>
+      <div class="compare-grid">
+        <div class="compare-card">
+          <h4 style="color:var(--text-muted)">🌐 Claude 网页版</h4>
+          <ul>
+            <li>在浏览器中聊天</li>
+            <li>文件需手动上传 / 下载</li>
+            <li>只给建议，不执行</li>
+            <li>适合问答、写作</li>
+          </ul>
+        </div>
+        <div class="compare-card highlight">
+          <h4>⚡ Claude Code（本指南）</h4>
+          <ul>
+            <li>在终端中使用</li>
+            <li><strong>直接读写电脑文件</strong></li>
+            <li><strong>可以直接执行代码</strong></li>
+            <li><strong>自动化任务、处理文件</strong></li>
+          </ul>
+        </div>
+      </div>
+      <p style="color:var(--text-muted);font-size:14.5px;">简单说：Claude Code 可以直接在你的电脑上"动手干活"，而网页版只能"动嘴说话"。</p>
+    </section>
+
+    <!-- S2 -->
+    <section id="s2">
+      <h2><span class="sec-num">2</span>准备 API Key</h2>
+
+      <p>使用 Claude Code 需要一个 API Key（密钥）。共有三种方式获取，推荐优先考虑<strong>中转 API</strong>：</p>
+
+      <!-- method cards -->
+      <div style="display:grid;gap:12px;margin:20px 0;">
+
+        <!-- 方式一：中转 API（推荐） -->
+        <div style="background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:20px;position:relative;">
+          <div style="position:absolute;top:-11px;left:16px;background:var(--accent);color:#000;font-size:11px;font-weight:800;padding:2px 10px;border-radius:20px;letter-spacing:0.06em;">⭐ 推荐</div>
+          <h4 style="margin-top:4px;font-size:16px;">🔀 方式一：第三方中转 API</h4>
+          <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">由第三方服务商提供的 Claude API 代理，<strong>价格通常只有官方的 1/3 到 1/10</strong>，无需海外信用卡，按实际用量付费，国内网络即可访问。</p>
+          <div class="table-wrap" style="margin:0;">
+            <table>
+              <thead><tr><th>优势</th><th>注意事项</th></tr></thead>
+              <tbody>
+                <tr><td>✅ 价格便宜，按量计费</td><td>需要选择信誉好的服务商</td></tr>
+                <tr><td>✅ 无需海外信用卡</td><td>服务稳定性依赖服务商</td></tr>
+                <tr><td>✅ 国内网络直连</td><td>–</td></tr>
+                <tr><td>✅ 配置简单（两个变量）</td><td>–</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout tip" style="margin-top:12px;margin-bottom:0;">
+            <span class="icon">💡</span>
+            <div>从中转服务商处获取两样东西：<strong>API 地址（Base URL）</strong> 和 <strong>API Key</strong>，然后按下方配置即可。</div>
+          </div>
+        </div>
+
+        <!-- 方式二：官方账号 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+          <h4 style="font-size:16px;color:var(--text-muted);">🏢 方式二：Anthropic 官方账号</h4>
+          <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">直接在 Anthropic 官网订阅，需要海外信用卡，价格相对较高，但最官方、最稳定。</p>
+          <div class="table-wrap" style="margin:0;">
+            <table>
+              <thead><tr><th>账号类型</th><th>费用</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td>Claude Pro</td><td>$20 / 月</td><td>包月不限量（有速率上限）</td></tr>
+                <tr><td>Claude Max</td><td>$100–200 / 月</td><td>更高速率限制</td></tr>
+                <tr><td>Anthropic Console</td><td>按用量计费</td><td>开发者首选，充值即用</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout danger" style="margin-top:12px;margin-bottom:0;">
+            <span class="icon">⚠️</span>
+            <div>免费版 Claude.ai 账号<strong>不支持</strong> Claude Code。注册或升级：<a href="https://claude.ai/upgrade" target="_blank">claude.ai/upgrade →</a></div>
+          </div>
+        </div>
+
+        <!-- 方式三：大厂云平台 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+          <h4 style="font-size:16px;color:var(--text-muted);">☁️ 方式三：大厂云平台 API</h4>
+          <p style="font-size:14px;color:var(--text-muted);">如果公司已有 AWS / GCP / Azure 账号，可直接接入，适合企业场景。</p>
+          <div class="table-wrap" style="margin:0;">
+            <table>
+              <thead><tr><th>平台</th><th>所需凭证</th></tr></thead>
+              <tbody>
+                <tr><td>Amazon Bedrock</td><td>AWS Access Key + Secret</td></tr>
+                <tr><td>Google Vertex AI</td><td>GCP 项目凭证</td></tr>
+                <tr><td>Microsoft Azure AI Foundry</td><td>Azure API Key</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <h3>系统要求</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>系统</th><th>最低版本</th></tr></thead>
+          <tbody>
+            <tr><td>macOS</td><td>13.0（Ventura）或更新</td></tr>
+            <tr><td>Windows</td><td>Windows 10 1809 或更新</td></tr>
+            <tr><td>内存</td><td>4 GB 以上</td></tr>
+            <tr><td>网络</td><td>需要稳定的网络连接</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- S3 -->
+    <section id="s3">
+      <h2><span class="sec-num">3</span>一键安装（推荐方式）</h2>
+      <p>我们提供了专门为新手设计的交互式安装脚本，会用中文一步步引导你完成安装。</p>
+
+      <div class="os-tabs" id="install-tabs">
+        <div class="os-tab active" data-target="install-mac">🍎 macOS</div>
+        <div class="os-tab" data-target="install-win">🪟 Windows</div>
+      </div>
+
+      <div class="os-panel active" id="install-mac">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>打开终端</strong>
+              按 <code>⌘ Command + 空格</code>，搜索并打开 <strong>终端（Terminal）</strong><br>
+              或者：Finder → 应用程序 → 实用工具 → 终端
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>粘贴以下命令并按回车</strong>
+              <pre><code>curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-setup/main/install-claude-mac.sh | bash</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+              <div class="callout tip" style="margin-top:8px;font-size:13px;">
+                <span class="icon">💡</span>
+                <div>将 <code>YOUR_USERNAME</code> 替换为脚本所在的 GitHub 用户名和仓库名。</div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>按照屏幕提示操作即可</strong>
+              脚本会自动检查系统、下载安装 Claude Code，全程中文引导，约 3–5 分钟。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="os-panel" id="install-win">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>打开 PowerShell</strong>
+              按 <code>Win + R</code>，输入 <code>powershell</code>，按回车<br>
+              或者：开始菜单搜索 <strong>PowerShell</strong>，右键 → <strong>以管理员身份运行</strong>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>粘贴以下命令并按回车</strong>
+              <pre><code>irm https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-setup/main/install-claude-windows.ps1 | iex</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+              <div class="callout tip" style="margin-top:8px;font-size:13px;">
+                <span class="icon">💡</span>
+                <div>将 <code>YOUR_USERNAME</code> 替换为脚本所在的 GitHub 用户名和仓库名。</div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>按照屏幕提示操作即可</strong>
+              脚本会自动安装所有依赖（包括 Git for Windows），全程中文引导，约 5–15 分钟。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- S4 -->
+    <section id="s4">
+      <h2><span class="sec-num">4</span>手动安装步骤</h2>
+
+      <div class="callout warn" style="margin-bottom:20px;">
+        <span class="icon">⚠️</span>
+        <div><strong>优先使用一键安装脚本！</strong><br>
+        强烈建议使用<a href="#s3" style="color:var(--accent);font-weight:600;">第3节的一键安装脚本</a>，它会自动完成所有配置（包括环境变量、配置文件等），大大简化安装过程。<br>
+        本节手动安装步骤仅供一键脚本无法运行时使用，且需要你自己手动配置 API（参考<a href="#s2" style="color:var(--accent);">第2节</a>）。</div>
+      </div>
+
+      <details>
+        <summary>🔧 高级：手动安装步骤（不推荐，仅供一键脚本失败时使用）</summary>
+        <div class="faq-body">
+          <p>如果一键脚本无法运行，可以按以下步骤手动安装。</p>
+
+          <div class="os-tabs" id="manual-tabs">
+            <div class="os-tab active" data-target="manual-mac">🍎 macOS</div>
+            <div class="os-tab" data-target="manual-win">🪟 Windows</div>
+          </div>
+
+          <div class="os-panel active" id="manual-mac">
+            <div class="steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                  <strong>打开终端，运行官方安装命令</strong>
+                  <pre><code>curl -fsSL https://claude.ai/install.sh | bash</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+                  等待安装完成（约 1–3 分钟）。
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                  <strong>验证安装</strong>
+                  <pre><code>claude --version</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+                  显示版本号说明安装成功。
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                  <strong>启动 Claude Code</strong>
+                  <pre><code>claude</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="os-panel" id="manual-win">
+            <div class="callout warn">
+              <span class="icon">⚠️</span>
+              <div><strong>前置步骤：</strong>Claude Code 在 Windows 上需要 <strong>Git for Windows</strong>。<br>
+              请先前往 <a href="https://git-scm.com/download/win" target="_blank">git-scm.com/download/win</a> 下载安装（所有选项保持默认），安装后重新打开 PowerShell。</div>
+            </div>
+            <div class="steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                  <strong>在 PowerShell 中运行官方安装命令</strong>
+                  <pre><code>irm https://claude.ai/install.ps1 | iex</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+                  等待安装完成（约 2–5 分钟）。
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                  <strong>验证安装</strong>
+                  <pre><code>claude --version</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                  <strong>启动 Claude Code</strong>
+                  <pre><code>claude</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- S5 -->
+    <section id="s5">
+      <h2><span class="sec-num">5</span>首次启动</h2>
+
+      <p>安装完成后，在终端输入 <code>claude</code> 并按回车即可启动。根据你选择的接入方式，启动流程略有不同：</p>
+
+      <div class="compare-grid" style="margin:20px 0;">
+        <div class="compare-card highlight">
+          <h4 style="color:var(--accent);">🔀 使用中转 API（推荐）</h4>
+          <p style="font-size:14px;color:var(--text-muted);margin:12px 0;">如果你在安装时选择了"中转 API"方式，一键脚本已经自动配置好一切。</p>
+          <div style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin:10px 0;">
+            <p style="font-size:13px;color:#6ee7b7;margin:0;">✅ <strong>无需浏览器登录</strong></p>
+            <p style="font-size:13px;color:var(--text-muted);margin:6px 0 0;">直接输入 <code>claude</code>，立即进入对话模式，开始使用！</p>
+          </div>
+        </div>
+
+        <div class="compare-card">
+          <h4 style="color:var(--text-muted);">🏢 使用官方账号</h4>
+          <p style="font-size:14px;color:var(--text-muted);margin:12px 0;">如果你选择了 Anthropic 官方账号，首次启动需要浏览器授权：</p>
+          <ol style="padding-left:20px;font-size:13.5px;color:var(--text-muted);">
+            <li style="margin:6px 0;">输入 <code>claude</code> 并按回车</li>
+            <li style="margin:6px 0;">系统自动打开浏览器</li>
+            <li style="margin:6px 0;">登录你的 Claude 账号</li>
+            <li style="margin:6px 0;">点击"授权"按钮</li>
+            <li style="margin:6px 0;">回到终端即可使用</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="icon">✅</span>
+        <div>以后每次使用，只需打开终端输入 <code>claude</code> 即可直接进入，不需要重复登录。</div>
+      </div>
+    </section>
+
+    <!-- S6 -->
+    <section id="s6">
+      <h2><span class="sec-num">6</span>如何使用 Claude Code</h2>
+
+      <h3>基本界面</h3>
+      <p>启动后，你会看到类似这样的界面，光标在 <code>✦</code> 后面，直接用中文输入需求：</p>
+      <pre><code>Claude Code v2.x.x
+> 你好！我准备好了，有什么可以帮你？
+
+✦ </code></pre>
+
+      <h3>两种使用模式</h3>
+      <div class="compare-grid">
+        <div class="compare-card">
+          <h4>💬 交互式对话模式</h4>
+          <pre style="margin-top:8px;"><code>claude</code></pre>
+          <p style="font-size:13.5px;color:var(--text-muted);margin-top:8px;">启动后保持对话，可以多轮交流，就像微信聊天一样，适合一步步完成任务。</p>
+        </div>
+        <div class="compare-card">
+          <h4>⚡ 单次命令模式</h4>
+          <pre style="margin-top:8px;"><code>claude "你的问题"</code></pre>
+          <p style="font-size:13.5px;color:var(--text-muted);margin-top:8px;">直接在命令后面加上问题，执行完毕自动退出，适合快速完成单个任务。</p>
+        </div>
+      </div>
+
+      <h3>在特定文件夹中使用</h3>
+      <p>Claude Code 默认在<strong>你当前所在的文件夹</strong>中工作，所以先导航到目标文件夹再启动：</p>
+      <div class="os-tabs" id="folder-tabs">
+        <div class="os-tab active" data-target="folder-mac">🍎 macOS</div>
+        <div class="os-tab" data-target="folder-win">🪟 Windows</div>
+      </div>
+      <div class="os-panel active" id="folder-mac">
+        <ul style="padding-left:20px;font-size:14.5px;color:var(--text-muted);">
+          <li style="margin-bottom:8px;">在 Finder 中找到文件夹 → 右键点击 → <strong>在终端中打开</strong>（macOS 14+）</li>
+          <li>或者：打开终端，输入 <code>cd&nbsp;</code>（注意有空格），把文件夹直接拖进终端窗口，按回车</li>
+        </ul>
+      </div>
+      <div class="os-panel" id="folder-win">
+        <ul style="padding-left:20px;font-size:14.5px;color:var(--text-muted);">
+          <li style="margin-bottom:8px;">在文件资源管理器中打开目标文件夹 → 在地址栏输入 <code>powershell</code> → 按回车</li>
+          <li>或者：按住 <code>Shift</code>，右键空白处 → <strong>在此处打开 PowerShell 窗口</strong></li>
+        </ul>
+      </div>
+
+      <div class="callout tip" style="margin-top:16px;">
+        <span class="icon">💡</span>
+        <div>退出 Claude Code：在对话中按 <code>Ctrl + C</code> 或输入 <code>exit</code>。</div>
+      </div>
+    </section>
+
+    <!-- S7 -->
+    <section id="s7">
+      <h2><span class="sec-num">7</span>实用示例：常见任务</h2>
+      <p>以下提示词可以直接点击复制，粘贴到 Claude Code 中使用：</p>
+
+      <div class="prompt-grid">
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          📁 帮我把当前文件夹中的所有图片（jpg、png、gif）移动到一个叫"图片"的子文件夹里
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          📁 帮我把所有 .txt 文件合并成一个文件，文件名为 combined.txt
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          📊 帮我读取 data.csv 文件，统计一下有多少行数据，并列出每一列的名称
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          📊 data.xlsx 里有一列"销售额"，帮我算出总额、平均值和最大值
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          📊 帮我把这个 JSON 文件转换成 CSV 格式，方便用 Excel 打开
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          🛠️ 帮我写一段代码，批量把文件夹里所有图片的尺寸改成 800x600
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          🔍 帮我看看 app.py 这个文件里有没有明显的错误
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          🔍 帮我给这个脚本加上中文注释，让我能看懂每一步在做什么
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          🔍 帮我解释一下 Python 是什么，以及我能用它做什么日常工作
+          <span class="copy-hint">点击复制</span>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt(this)">
+          🔍 帮我在当前项目里搜索所有包含"TODO"的文件，告诉我有哪些未完成的事项
+          <span class="copy-hint">点击复制</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- S8 -->
+    <section id="s8">
+      <h2><span class="sec-num">8</span>常见问题解答</h2>
+
+      <details>
+        <summary>输入 claude 提示"命令未找到"怎么办？</summary>
+        <div class="faq-body">
+          <p>这是最常见的问题，通常只需重启终端即可解决：</p>
+          <p><strong>macOS：</strong></p>
+          <ol>
+            <li>关闭当前终端窗口</li>
+            <li>重新打开终端</li>
+            <li>再次输入 <code>claude</code></li>
+          </ol>
+          <p>如果还是不行，在终端运行：</p>
+          <pre><code>source ~/.zshrc</code></pre>
+          <p><strong>Windows：</strong>关闭 PowerShell，重新打开，再次输入 <code>claude</code>。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>提示"需要 Pro 账号"怎么办？</summary>
+        <div class="faq-body">
+          <p>你的账号可能是免费版，Claude Code 不支持免费账号。请访问 <a href="https://claude.ai/upgrade" target="_blank">claude.ai/upgrade</a> 升级到 Pro 或 Max 套餐。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>能不能不用终端，直接用图形界面？</summary>
+        <div class="faq-body">
+          <p>可以，但有限制。Claude Code 有官方桌面应用版：</p>
+          <ul>
+            <li><a href="https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect" target="_blank">macOS 版下载</a></li>
+            <li><a href="https://claude.ai/api/desktop/win32/x64/exe/latest/redirect" target="_blank">Windows 版下载</a></li>
+          </ul>
+          <div style="margin-top:10px;padding:10px 14px;background:var(--red-bg);border-left:3px solid var(--red);border-radius:6px;font-size:13.5px;color:#fca5a5;">
+            ⚠️ <strong>重要限制：</strong>桌面应用<strong>仅支持 Claude Pro / Max 官方会员</strong>登录使用。<br>
+            使用第三方中转 API、Anthropic Console API Key、Bedrock、Vertex AI 等方式的用户<strong>无法使用桌面端</strong>，请继续使用终端（命令行）版本。
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Claude Code 2.0 启动时强制要求登录，用了 API Key 也没用怎么办？</summary>
+        <div class="faq-body">
+          <div class="callout tip" style="margin-bottom:16px;">
+            <span class="icon">✨</span>
+            <div><strong>使用一键安装脚本可自动解决此问题！</strong><br>
+            如果你使用了<a href="#s3" style="color:var(--accent);font-weight:600;">第3节的一键安装脚本</a>并选择了"中转 API"方式，脚本已经自动创建了 <code>~/.claude.json</code> 配置文件，<strong>无需手动操作</strong>。<br>
+            本节内容仅供手动安装的用户参考。</div>
+          </div>
+
+          <p>这是 Claude Code 2.0 的一个已知问题：即使正确设置了 <code>ANTHROPIC_API_KEY</code> 和 <code>ANTHROPIC_BASE_URL</code>，首次启动时仍会弹出登录界面，且会尝试连接 <code>api.anthropic.com</code> 进行验证，导致中转 API 用户无法通过。</p>
+          <p><strong>手动解决方法：创建配置文件，跳过 onboarding 流程。</strong></p>
+
+          <p style="margin-top:12px;"><strong>🍎 macOS / Linux：</strong></p>
+          <p style="font-size:13px;color:var(--text-muted);">在终端中运行以下命令（一次性执行即可）：</p>
+          <pre><code>cat > ~/.claude.json << 'EOF'
+{
+  "hasCompletedOnboarding": true,
+  "primaryApiKey": "你的API_Key"
+}
+EOF</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+          <p style="font-size:13px;color:var(--text-muted);">将 <code>你的API_Key</code> 替换为你的实际 API Key，然后确保 <code>ANTHROPIC_BASE_URL</code> 也已设置（见第 2 节），再运行 <code>claude</code> 即可。</p>
+
+          <p style="margin-top:14px;"><strong>🪟 Windows（PowerShell）：</strong></p>
+          <pre><code>@"
+{
+  "hasCompletedOnboarding": true,
+  "primaryApiKey": "你的API_Key"
+}
+"@ | Set-Content -Path "$env:USERPROFILE\.claude.json" -Encoding UTF8</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+
+          <div style="margin-top:12px;padding:10px 14px;background:var(--yellow-bg);border-left:3px solid var(--yellow);border-radius:6px;font-size:13px;color:#fcd34d;">
+            💡 <strong>原理说明：</strong>Claude Code 2.0 在 <code>~/.claude.json</code> 中用 <code>hasCompletedOnboarding: true</code> 判断是否跳过登录引导。手动写入此文件后，启动时便不再强制弹出登录界面，转而直接读取环境变量中的 API Key。<br><br>
+            ⚠️ 此为社区总结的变通方案，官方后续版本可能调整行为，若失效请检查是否有新版本的说明。
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Claude Code 会乱删我的文件吗？安全吗？</summary>
+        <div class="faq-body">
+          <p>Claude Code 默认在<strong>每次执行有影响的操作前会先询问你确认</strong>。比如要删除文件或修改代码时，它会先显示打算做什么，等你按 <code>Y</code> 确认后才执行。</p>
+          <p>建议在重要操作前做好备份，以防万一。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>使用时会额外收费吗？</summary>
+        <div class="faq-body">
+          <ul>
+            <li><strong>Claude Pro / Max 套餐：</strong>Claude Code 的使用包含在月费中，不额外收费。</li>
+            <li><strong>Anthropic Console API：</strong>按 API 调用量计费，费用取决于使用量。</li>
+            <li><strong>Amazon Bedrock / Vertex AI：</strong>按对应云平台的 AI 模型使用量计费。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>可以用中文吗？</summary>
+        <div class="faq-body">
+          <p>完全可以。Claude Code 支持中文对话，直接用中文描述需求即可，无需切换语言。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>我没有编程经验，能用好 Claude Code 吗？</summary>
+        <div class="faq-body">
+          <p>当然可以！Claude Code 本来就是为了让<strong>不懂编程的人也能完成自动化任务</strong>而设计的。</p>
+          <p>诀窍是：<strong>描述越具体，结果越准确。</strong></p>
+          <p>与其说"整理文件"，不如说"把桌面上所有 2024 年之前创建的 PDF 文件移动到 Documents/旧文件 文件夹"。</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- S9 -->
+    <section id="s9">
+      <h2><span class="sec-num">9</span>遇到问题？</h2>
+
+      <h3>官方资源</h3>
+      <div class="compare-grid">
+        <a href="https://code.claude.com/docs/en/quickstart" target="_blank" style="text-decoration:none;">
+          <div class="compare-card" style="cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <h4>📖 官方快速入门</h4>
+            <p style="font-size:13px;color:var(--text-muted);">code.claude.com/docs/en/quickstart</p>
+          </div>
+        </a>
+        <a href="https://code.claude.com/docs/en/troubleshooting" target="_blank" style="text-decoration:none;">
+          <div class="compare-card" style="cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <h4>🔧 故障排查指南</h4>
+            <p style="font-size:13px;color:var(--text-muted);">code.claude.com/docs/en/troubleshooting</p>
+          </div>
+        </a>
+      </div>
+
+      <h3>常用维护命令</h3>
+      <div class="compare-grid">
+        <div>
+          <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:6px;">🩺 运行诊断（自动检查安装状态）</p>
+          <pre><code>claude doctor</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+        </div>
+        <div>
+          <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:6px;">⬆️ 手动更新（通常自动更新）</p>
+          <pre><code>claude update</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+        </div>
+      </div>
+
+      <h3>卸载 Claude Code</h3>
+      <div class="os-tabs" id="uninstall-tabs">
+        <div class="os-tab active" data-target="uninstall-mac">🍎 macOS</div>
+        <div class="os-tab" data-target="uninstall-win">🪟 Windows</div>
+      </div>
+      <div class="os-panel active" id="uninstall-mac">
+        <pre><code>rm -f ~/.local/bin/claude
+rm -rf ~/.local/share/claude</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+      </div>
+      <div class="os-panel" id="uninstall-win">
+        <pre><code>Remove-Item -Path "$env:USERPROFILE\.local\bin\claude.exe" -Force
+Remove-Item -Path "$env:USERPROFILE\.local\share\claude" -Recurse -Force</code><button class="copy-btn" onclick="copyCode(this)">复制</button></pre>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  📅 文档版本：2026 年 3 月 &nbsp;·&nbsp;
+  📌 <a href="https://code.claude.com" target="_blank">Claude Code 官网</a> &nbsp;·&nbsp;
+  本文档由 AI 辅助生成，如有错误欢迎反馈
+</footer>
+
+<script>
+  // ── Tab switcher ──
+  document.querySelectorAll('.os-tabs').forEach(function(tabs) {
+    tabs.querySelectorAll('.os-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var target = tab.dataset.target;
+        tabs.querySelectorAll('.os-tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        // find sibling panels
+        var container = tabs.parentElement;
+        container.querySelectorAll('.os-panel').forEach(function(panel) {
+          panel.classList.toggle('active', panel.id === target);
+        });
+      });
+    });
+  });
+
+  // ── Copy code ──
+  function copyCode(btn) {
+    var code = btn.previousElementSibling.textContent.trim();
+    navigator.clipboard.writeText(code).then(function() {
+      btn.textContent = '已复制!';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.textContent = '复制';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // ── Copy prompt card ──
+  function copyPrompt(card) {
+    var text = card.childNodes[0].textContent.trim();
+    navigator.clipboard.writeText(text).then(function() {
+      var hint = card.querySelector('.copy-hint');
+      hint.textContent = '已复制!';
+      hint.style.opacity = '1';
+      hint.style.color = 'var(--green)';
+      setTimeout(function() {
+        hint.textContent = '点击复制';
+        hint.style.color = '';
+        hint.style.opacity = '';
+      }, 2000);
+    });
+  }
+
+  // ── Sidebar active on scroll ──
+  var sections = document.querySelectorAll('section[id]');
+  var navLinks = document.querySelectorAll('#toc a');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        navLinks.forEach(function(link) { link.classList.remove('active'); });
+        var active = document.querySelector('#toc a[href="#' + entry.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(function(s) { observer.observe(s); });
+</script>
+</body>
+</html>

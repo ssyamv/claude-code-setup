@@ -2,6 +2,11 @@
 
 适合完全没有编程经验的用户，一键安装并配置 Claude Code。
 
+## 📚 在线教程
+
+- [Claude Code 完全入门指南](https://ssyamv.github.io/claude-code-setup/claude-code-guide.html) - 零基础也能学会的详细教程
+- [Claude Cowork 使用教程](https://ssyamv.github.io/claude-code-setup/claude_cowork_教程.html) - 桌面版使用指南
+
 ## 支持平台
 
 - ✅ macOS 10.0+

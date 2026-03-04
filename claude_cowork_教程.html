@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Cowork 使用教程 — 普通人也能轻松上手</title>
+  <style>
+    :root {
+      --primary: #d97706;
+      --primary-light: #fef3c7;
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --text: #1c1917;
+      --muted: #78716c;
+      --border: #e7e5e4;
+      --accent: #0369a1;
+      --accent-light: #e0f2fe;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --warn: #9333ea;
+      --warn-light: #f3e8ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+      color: #fff;
+      padding: 3rem 2rem 2.5rem;
+      text-align: center;
+    }
+    header .badge {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    header h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: .5rem; }
+    header p  { color: #a8a29e; font-size: 1.05rem; max-width: 520px; margin: 0 auto; }
+
+    /* ── Layout ── */
+    .wrapper { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 1rem; color: var(--muted); margin-bottom: .75rem; letter-spacing: .05em; text-transform: uppercase; }
+    .toc ol  { padding-left: 1.4rem; }
+    .toc li  { margin-bottom: .3rem; }
+    .toc a   { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── Sections ── */
+    section { margin-bottom: 3rem; }
+    section h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      padding-bottom: .5rem;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    section h3 { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 .6rem; color: #44403c; }
+    section p  { margin-bottom: .85rem; color: #44403c; }
+
+    /* ── Cards ── */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.25rem 1rem;
+    }
+    .card .icon { font-size: 1.75rem; margin-bottom: .5rem; }
+    .card h3   { font-size: .95rem; font-weight: 700; margin-bottom: .35rem; }
+    .card p    { font-size: .875rem; color: var(--muted); margin: 0; }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem; height: 2rem;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .9rem;
+    }
+    .steps li .txt { padding-top: .25rem; }
+    .steps li .txt strong { display: block; font-size: 1rem; margin-bottom: .15rem; }
+    .steps li .txt span  { color: var(--muted); font-size: .9rem; }
+
+    /* ── Callout ── */
+    .callout {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      display: flex;
+      gap: .75rem;
+      align-items: flex-start;
+    }
+    .callout.tip    { background: var(--success-light); border-left: 4px solid var(--success); }
+    .callout.info   { background: var(--accent-light);  border-left: 4px solid var(--accent); }
+    .callout.warn   { background: var(--warn-light);    border-left: 4px solid var(--warn); }
+    .callout.amber  { background: var(--primary-light); border-left: 4px solid var(--primary); }
+    .callout .emoji { font-size: 1.3rem; flex-shrink: 0; }
+    .callout .body  { font-size: .92rem; color: #1c1917; }
+    .callout .body strong { font-weight: 700; display: block; margin-bottom: .15rem; }
+
+    /* ── Example Chat ── */
+    .chat { margin: 1rem 0; }
+    .bubble {
+      border-radius: 16px;
+      padding: .8rem 1.1rem;
+      max-width: 85%;
+      margin-bottom: .55rem;
+      font-size: .93rem;
+      line-height: 1.6;
+    }
+    .bubble.user {
+      background: var(--primary);
+      color: #fff;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.ai {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .bubble-label { font-size: .75rem; color: var(--muted); margin-bottom: .2rem; }
+    .bubble-label.right { text-align: right; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 1rem 0; }
+    th { background: #292524; color: #fff; padding: .6rem .9rem; text-align: left; }
+    td { padding: .55rem .9rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #f5f5f4; }
+
+    /* ── Tag ── */
+    .tag {
+      display: inline-block;
+      background: var(--primary-light);
+      color: #92400e;
+      font-size: .75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: .15rem .5rem;
+      margin-right: .3rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: .85rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.6rem; }
+      .card-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">新手友好 · 中文教程</div>
+  <h1>Claude Cowork 使用指南</h1>
+  <p>不需要任何编程知识，普通职场人也能用 AI 处理文件、写报告、做表格</p>
+</header>
+
+<div class="wrapper">
+
+  <!-- TOC -->
+  <nav class="toc">
+    <h2>📋 目录</h2>
+    <ol>
+      <li><a href="#what">什么是 Claude Cowork？</a></li>
+      <li><a href="#start">第一步：开始使用</a></li>
+      <li><a href="#folder">第二步：选择工作文件夹</a></li>
+      <li><a href="#chat">第三步：如何与 Claude 对话</a></li>
+      <li><a href="#usecases">常见使用场景</a></li>
+      <li><a href="#tips">对话技巧与提示词写法</a></li>
+      <li><a href="#safety">安全须知</a></li>
+      <li><a href="#faq">常见问题解答</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. 什么是 -->
+  <section id="what">
+    <h2>🤖 1 &nbsp; 什么是 Claude Cowork？</h2>
+    <p>Claude Cowork 是 Anthropic 推出的一款 <strong>桌面 AI 助手</strong>，它直接运行在你的电脑上，可以帮你处理本地文件。你不需要学习任何编程——只需用自然语言告诉它你想做什么，它就会帮你完成。</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="icon">📄</div>
+        <h3>处理文档</h3>
+        <p>撰写/修改 Word 文档、生成报告、整理文字内容</p>
+      </div>
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>制作表格</h3>
+        <p>创建 Excel 表格、数据汇总、简单公式计算</p>
+      </div>
+      <div class="card">
+        <div class="icon">📑</div>
+        <h3>生成 PPT</h3>
+        <p>根据你的需求制作演示文稿幻灯片</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔍</div>
+        <h3>搜索信息</h3>
+        <p>联网查询最新资讯，帮你快速获取所需知识</p>
+      </div>
+      <div class="card">
+        <div class="icon">📁</div>
+        <h3>管理文件</h3>
+        <p>读取、整理、重命名、分析你电脑里的文件</p>
+      </div>
+      <div class="card">
+        <div class="icon">💬</div>
+        <h3>随时问答</h3>
+        <p>任何工作问题都可以问它，它会用中文回答</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 开始使用 -->
+  <section id="start">
+    <h2>🚀 2 &nbsp; 第一步：开始使用</h2>
+    <ol class="steps">
+      <li>
+        <div class="txt">
+          <strong>下载并安装 Claude 桌面应用</strong>
+          <span>访问 <em>claude.ai</em>，下载适合你电脑系统（Windows / macOS）的版本，按提示安装完成。</span>
+        </div>
+      </li>
+      <li>
+        <div class="txt">
+          <strong>注册或登录账号</strong>
+          <span>用邮箱注册一个免费账号，或者用 Google 账号一键登录。</span>
+        </div>
+      </li>
+      <li>
+        <div class="txt">
+          <strong>在应用内找到 Cowork 功能</strong>
+          <span>打开桌面应用后，在侧边栏或主界面找到 <strong>Cowork</strong> 入口并点击。</span>
+        </div>
+      </li>
+      <li>
+        <div class="txt">
+          <strong>开始对话</strong>
+          <span>界面底部有一个输入框，直接打字描述你的需求即可，不需要任何特殊格式。</span>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout tip">
+      <div class="emoji">✅</div>
+      <div class="body"><strong>无需编程知识</strong>你只需要会打字就能使用 Claude Cowork。用中文告诉它你想做什么，它会自动完成。</div>
+    </div>
+  </section>
+
+  <!-- 3. 选择文件夹 -->
+  <section id="folder">
+    <h2>📂 3 &nbsp; 第二步：选择工作文件夹</h2>
+    <p>在处理本地文件之前，你需要告诉 Claude 可以访问电脑上的哪个文件夹。这一步非常重要，也很简单。</p>
+
+    <ol class="steps">
+      <li>
+        <div class="txt">
+          <strong>等待 Claude 请求文件夹权限</strong>
+          <span>当你要求 Claude 处理本地文件时，它会主动弹出一个对话框，请求你选择一个文件夹。</span>
+        </div>
+      </li>
+      <li>
+        <div class="txt">
+          <strong>点击「选择文件夹」按钮</strong>
+          <span>在弹出的系统文件选择器中，找到你想让 Claude 访问的文件夹（比如「桌面」或「工作文件」文件夹）。</span>
+        </div>
+      </li>
+      <li>
+        <div class="txt">
+          <strong>确认授权</strong>
+          <span>选择好后点击「确定」。Claude 就可以读取该文件夹里的文件，并将新建文件保存到这里。</span>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout amber">
+      <div class="emoji">💡</div>
+      <div class="body"><strong>建议：新建一个专用文件夹</strong>在桌面新建一个名为「AI工作区」的文件夹，专门用来存放让 Claude 处理的文件和它生成的成果，便于管理。</div>
+    </div>
+  </section>
+
+  <!-- 4. 如何对话 -->
+  <section id="chat">
+    <h2>💬 4 &nbsp; 第三步：如何与 Claude 对话</h2>
+    <p>使用 Claude Cowork 的核心就是「用自然语言描述你的需求」。以下是一些基本原则：</p>
+
+    <h3>🎯 说清楚你想要什么结果</h3>
+    <div class="chat">
+      <div class="bubble-label right">你</div>
+      <div class="bubble user">帮我写一份关于第一季度销售情况的报告</div>
+      <div class="bubble-label">Claude</div>
+      <div class="bubble ai">好的！请问你希望报告包含哪些内容？比如销售数据、主要亮点、下季度计划等？报告大约需要多长？</div>
+    </div>
+
+    <h3>📎 可以上传文件让它分析</h3>
+    <div class="chat">
+      <div class="bubble-label right">你</div>
+      <div class="bubble user">我上传了一个 Excel 表格，帮我计算各部门的总销售额，并生成一个新的汇总表</div>
+      <div class="bubble-label">Claude</div>
+      <div class="bubble ai">收到！我来读取你的表格……已完成分析，已生成汇总表，点击链接即可查看：<u>销售汇总.xlsx</u></div>
+    </div>
+
+    <h3>🔄 可以反复修改，直到满意</h3>
+    <div class="chat">
+      <div class="bubble-label right">你</div>
+      <div class="bubble user">这份报告写得太正式了，语气改得轻松一点，像写给同事看的那种</div>
+      <div class="bubble-label">Claude</div>
+      <div class="bubble ai">明白！我来调整一下语气，让它更口语化、更亲切……</div>
+    </div>
+
+    <div class="callout info">
+      <div class="emoji">ℹ️</div>
+      <div class="body"><strong>Claude 会主动问你问题</strong>如果你的需求不够清楚，Claude 会在开始工作前问你几个问题，帮它更准确地完成任务。这是正常现象，直接回答就好。</div>
+    </div>
+  </section>
+
+  <!-- 5. 使用场景 -->
+  <section id="usecases">
+    <h2>🌟 5 &nbsp; 常见使用场景</h2>
+    <p>以下是普通职场人最常用的几类任务，每种都附有可以直接复制使用的例子。</p>
+
+    <h3>📝 写作与文档</h3>
+    <table>
+      <tr><th>你的需求</th><th>可以这样说</th></tr>
+      <tr><td>写一封邮件</td><td>「帮我写一封给客户的感谢邮件，上周我们刚完成了一个合作项目」</td></tr>
+      <tr><td>写工作报告</td><td>「帮我写一份 500 字左右的月度工作总结，我这个月做了……」</td></tr>
+      <tr><td>修改文章</td><td>「帮我检查这篇文章的语法错误，并让表达更流畅」</td></tr>
+      <tr><td>写会议纪要</td><td>「根据我提供的要点，帮我整理成一份正式的会议纪要」</td></tr>
+    </table>
+
+    <h3>📊 表格与数据</h3>
+    <table>
+      <tr><th>你的需求</th><th>可以这样说</th></tr>
+      <tr><td>新建表格</td><td>「帮我制作一个员工考勤记录表，包含姓名、日期、上班时间、下班时间、备注」</td></tr>
+      <tr><td>数据汇总</td><td>「这个 Excel 有 12 个月的数据，帮我汇总每个季度的总和」</td></tr>
+      <tr><td>整理乱数据</td><td>「这个表格格式很乱，帮我重新整理成规范的表格」</td></tr>
+    </table>
+
+    <h3>📑 演示文稿</h3>
+    <table>
+      <tr><th>你的需求</th><th>可以这样说</th></tr>
+      <tr><td>制作 PPT</td><td>「帮我做一个 10 页的产品介绍 PPT，主题是……，受众是公司高管」</td></tr>
+      <tr><td>转换成 PPT</td><td>「把这份 Word 文档的内容转换成演示文稿」</td></tr>
+    </table>
+
+    <h3>🔍 查询与研究</h3>
+    <table>
+      <tr><th>你的需求</th><th>可以这样说</th></tr>
+      <tr><td>查最新资讯</td><td>「帮我搜索一下 2026 年中国新能源汽车行业的最新政策」</td></tr>
+      <tr><td>竞品分析</td><td>「帮我研究一下 XXX 公司的主要产品和市场定位」</td></tr>
+      <tr><td>解释概念</td><td>「用通俗易懂的语言解释一下什么是「供应链金融」」</td></tr>
+    </table>
+  </section>
+
+  <!-- 6. 技巧 -->
+  <section id="tips">
+    <h2>✨ 6 &nbsp; 对话技巧与提示词写法</h2>
+    <p>掌握以下几个技巧，可以让 Claude 更好地理解你的需求，输出更满意的结果。</p>
+
+    <h3>技巧一：说明背景和受众</h3>
+    <div class="callout tip">
+      <div class="emoji">👍</div>
+      <div class="body">
+        <strong>好的写法</strong>
+        「帮我写一篇 <span class="tag">面向非专业人士</span> 的人工智能科普文章，<span class="tag">约 800 字</span>，语气<span class="tag">轻松幽默</span>」
+      </div>
+    </div>
+    <div class="callout warn">
+      <div class="emoji">👎</div>
+      <div class="body">
+        <strong>模糊的写法</strong>「写一篇 AI 的文章」——太笼统，Claude 不知道面向谁、写多长、什么风格。
+      </div>
+    </div>
+
+    <h3>技巧二：分步骤提问</h3>
+    <p>如果任务比较复杂，不要一次性说完所有要求，可以分几轮对话逐步细化：</p>
+    <div class="chat">
+      <div class="bubble-label right">你（第1轮）</div>
+      <div class="bubble user">帮我做一份新员工入职培训方案的大纲</div>
+      <div class="bubble ai">好的，这里是大纲……（列出6个章节）</div>
+      <div class="bubble-label right">你（第2轮）</div>
+      <div class="bubble user">第三章「公司文化」展开写详细内容，大约 300 字</div>
+      <div class="bubble ai">好的，以下是第三章的详细内容……</div>
+    </div>
+
+    <h3>技巧三：提供范例</h3>
+    <p>如果你有参考样本，直接上传或粘贴给 Claude，让它照着格式来做，效果更准确。</p>
+    <div class="callout info">
+      <div class="emoji">💡</div>
+      <div class="body">「我上传了一份去年的报告作为参考，请按照同样的格式和风格，帮我写今年的版本。」</div>
+    </div>
+
+    <h3>技巧四：告诉它不要什么</h3>
+    <div class="callout amber">
+      <div class="emoji">🚫</div>
+      <div class="body">「写邮件，<strong>不要</strong>太正式，<strong>不要</strong>超过 200 字，<strong>不要</strong>用英文单词」——用否定句约束范围，效果很好。</div>
+    </div>
+
+    <h3>技巧五：直接说「不满意，重写」</h3>
+    <p>如果 Claude 的输出不符合你的预期，直接反馈就好，比如：</p>
+    <ul style="margin-left:1.5rem; color:#44403c;">
+      <li>「太长了，压缩到一半」</li>
+      <li>「换一个更有冲击力的标题」</li>
+      <li>「重新排版，改成表格形式」</li>
+      <li>「语气太客气了，直接说重点」</li>
+    </ul>
+  </section>
+
+  <!-- 7. 安全须知 -->
+  <section id="safety">
+    <h2>🔒 7 &nbsp; 安全须知</h2>
+    <p>Claude Cowork 非常注重你的数据安全，以下是几点重要提醒：</p>
+
+    <div class="callout warn">
+      <div class="emoji">⚠️</div>
+      <div class="body"><strong>不要输入敏感信息</strong>请避免将银行卡号、身份证号、密码、公司机密等高度敏感信息直接粘贴给 Claude。</div>
+    </div>
+
+    <div class="callout tip">
+      <div class="emoji">✅</div>
+      <div class="body"><strong>文件权限可控</strong>Claude 只能访问你主动选择授权的文件夹，不会偷偷读取你电脑上的其他内容。</div>
+    </div>
+
+    <div class="callout info">
+      <div class="emoji">ℹ️</div>
+      <div class="body"><strong>高风险操作需要你确认</strong>涉及删除文件、发送邮件、提交表单等不可撤销的操作，Claude 都会在聊天框里请求你的明确确认，你说「是」或「确认」后才会执行。</div>
+    </div>
+
+    <div class="callout amber">
+      <div class="emoji">🌐</div>
+      <div class="body"><strong>网页内容需谨慎</strong>如果 Claude 访问了某个网页，而网页里有「奇怪的指令」，Claude 会暂停并告诉你，让你决定是否继续。</div>
+    </div>
+  </section>
+
+  <!-- 8. FAQ -->
+  <section id="faq">
+    <h2>❓ 8 &nbsp; 常见问题解答</h2>
+
+    <h3>Q：Claude Cowork 需要付费吗？</h3>
+    <p><strong>是的，Cowork 仅对付费用户开放，免费版无法使用。</strong>目前支持以下付费计划：</p>
+    <table>
+      <tr><th>套餐</th><th>月费（美元）</th><th>说明</th></tr>
+      <tr><td>Pro</td><td>$20 / 月</td><td>可使用 Cowork，但用量较多时会较快触及限额</td></tr>
+      <tr><td>Max 5x</td><td>$100 / 月</td><td>使用量是 Pro 的 5 倍，适合高频用户</td></tr>
+      <tr><td>Max 20x</td><td>$200 / 月</td><td>使用量是 Pro 的 20 倍，适合重度日常用户</td></tr>
+      <tr><td>Team（高级席位）</td><td>$125 / 月 / 席</td><td>团队版需分配「高级席位」才能使用 Cowork</td></tr>
+    </table>
+    <p style="margin-top:.6rem;">Cowork 的费用已包含在上述套餐中，<strong>无需额外付费</strong>。由于 Cowork 任务消耗的额度比普通对话多，Pro 用户在密集使用时可能会更快遇到限额提示。</p>
+
+    <h3>Q：它支持中文吗？</h3>
+    <p>完全支持！你可以全程用中文与 Claude 对话，它生成的文档、表格、PPT 也都可以是中文内容。</p>
+
+    <h3>Q：生成的文件保存在哪里？</h3>
+    <p>Claude 会将生成的文件保存到你选择授权的文件夹中，完成后会在聊天框里给你一个链接，点击即可直接打开。</p>
+
+    <h3>Q：我的文件会上传到云端吗？</h3>
+    <p>Claude 需要读取文件内容才能帮你处理。建议查阅 Anthropic 官方隐私政策，了解数据处理方式。对于高度机密的商业文件，建议咨询公司 IT 部门后再使用。</p>
+
+    <h3>Q：Claude 会犯错吗？</h3>
+    <p>会的！Claude 是 AI，它有时会产生不准确的内容，尤其是涉及具体数字、专业法律/医疗建议时。<strong>重要文件请务必自己核对一遍再使用。</strong></p>
+
+    <h3>Q：一次可以上传多个文件吗？</h3>
+    <p>可以。你可以一次性上传多个文件，让 Claude 综合处理，比如「把这 3 份调研报告的核心结论汇总成一页摘要」。</p>
+
+    <h3>Q：如果 Claude 不理解我的意思怎么办？</h3>
+    <p>换一种方式描述你的需求，或者举一个具体的例子。比如「就像你在给小学生讲课一样，解释一下……」往往效果很好。</p>
+  </section>
+
+  <div class="callout tip" style="margin-top:2rem; padding:1.5rem;">
+    <div class="emoji">🎉</div>
+    <div class="body" style="font-size:1rem;">
+      <strong>现在就开始吧！</strong>
+      打开 Claude Cowork，把你今天最想完成的一项工作任务告诉它——不用想太多，就像发消息给同事一样，直接说出来就对了。
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<footer>
+  <p>本教程由 Claude 生成 · 适用于 Claude Cowork（桌面版）· 如有变化请以官方文档为准</p>
+  <p style="margin-top:.4rem;"><a href="https://docs.claude.com" style="color:#d97706;">docs.claude.com</a> &nbsp;·&nbsp; <a href="https://support.claude.com" style="color:#d97706;">support.claude.com</a></p>
+</footer>
+
+</body>
+</html>
