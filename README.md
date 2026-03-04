@@ -14,7 +14,7 @@
 打开终端（Terminal），粘贴以下命令并按回车：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qichensong/claude-code-setup/main/install-claude-mac.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ssyamv/claude-code-setup/main/install-claude-mac.sh | bash
 ```
 
 ### Windows 用户
@@ -22,7 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/qichensong/claude-code-setup/main/i
 以管理员身份打开 PowerShell，粘贴以下命令并按回车：
 
 ```powershell
-irm https://raw.githubusercontent.com/qichensong/claude-code-setup/main/install-claude-windows.ps1 | iex
+irm https://raw.githubusercontent.com/ssyamv/claude-code-setup/main/install-claude-windows.ps1 | iex
 ```
 
 ## 功能特性
@@ -88,7 +88,7 @@ irm https://raw.githubusercontent.com/qichensong/claude-code-setup/main/install-
 
 ```bash
 # 下载脚本
-curl -O https://raw.githubusercontent.com/qichensong/claude-code-setup/main/install-claude-mac.sh
+curl -O https://raw.githubusercontent.com/ssyamv/claude-code-setup/main/install-claude-mac.sh
 
 # 添加执行权限
 chmod +x install-claude-mac.sh
@@ -101,7 +101,7 @@ chmod +x install-claude-mac.sh
 
 ```powershell
 # 下载脚本
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/qichensong/claude-code-setup/main/install-claude-windows.ps1" -OutFile "install-claude-windows.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ssyamv/claude-code-setup/main/install-claude-windows.ps1" -OutFile "install-claude-windows.ps1"
 
 # 运行
 .\install-claude-windows.ps1
