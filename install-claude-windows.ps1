@@ -460,12 +460,62 @@ if (-not $script:SkipInstall) {
                 $zipUrl = "$gcsBucket/$version/claude-code-$platform.zip"
                 $zipPath = Join-Path $downloadDir "claude-code-$platform.zip"
 
-                Write-Info "正在下载 Claude Code（约 50-100MB，请耐心等待）..."
-                # 使用 WebClient 以支持更好的错误处理
-                $webClient = New-Object System.Net.WebClient
-                $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                $webClient.DownloadFile($zipUrl, $zipPath)
-                Write-Ok "下载完成！"
+                # 检查是否安装了 Node.js
+                $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+                if ($nodeCmd) {
+                    Write-Info "检测到 Node.js，使用 Node.js 下载（更稳定，约 50-100MB）..."
+
+                    # 创建临时的 Node.js 下载脚本
+                    $nodeScript = @"
+const https = require('https');
+const fs = require('fs');
+const url = '$($zipUrl.Replace('\', '\\'))';
+const dest = '$($zipPath.Replace('\', '\\'))';
+
+console.log('开始下载...');
+const file = fs.createWriteStream(dest);
+https.get(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+}, (response) => {
+    const total = parseInt(response.headers['content-length'], 10);
+    let downloaded = 0;
+    response.on('data', (chunk) => {
+        downloaded += chunk.length;
+        const percent = ((downloaded / total) * 100).toFixed(1);
+        process.stdout.write('\r下载进度: ' + percent + '%');
+    });
+    response.pipe(file);
+    file.on('finish', () => {
+        file.close();
+        console.log('\n下载完成！');
+    });
+}).on('error', (err) => {
+    fs.unlink(dest, () => {});
+    console.error('下载失败:', err.message);
+    process.exit(1);
+});
+"@
+                    $nodeScriptPath = Join-Path $downloadDir "download.js"
+                    $nodeScript | Set-Content -Path $nodeScriptPath -Encoding UTF8
+
+                    # 执行 Node.js 下载
+                    $nodeProcess = Start-Process -FilePath "node" -ArgumentList $nodeScriptPath -NoNewWindow -Wait -PassThru
+
+                    # 清理临时脚本
+                    Remove-Item $nodeScriptPath -Force -ErrorAction SilentlyContinue
+
+                    if ($nodeProcess.ExitCode -ne 0 -or -not (Test-Path $zipPath)) {
+                        throw "Node.js 下载失败"
+                    }
+                    Write-Ok "下载完成！"
+                } else {
+                    Write-Info "正在下载 Claude Code（约 50-100MB，请耐心等待）..."
+                    # 使用 WebClient 以支持更好的错误处理
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    $webClient.DownloadFile($zipUrl, $zipPath)
+                    Write-Ok "下载完成！"
+                }
 
                 Write-Info "正在解压..."
                 Expand-Archive -Path $zipPath -DestinationPath $downloadDir -Force
@@ -489,11 +539,84 @@ if (-not $script:SkipInstall) {
                     $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
                     $claudePath = Join-Path $installDir "claude.exe"
 
-                    Write-Info "正在下载（约 50-100MB，请耐心等待）..."
-                    $webClient = New-Object System.Net.WebClient
-                    $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                    $webClient.DownloadFile($claudeUrl, $claudePath)
-                    Write-Ok "从 GitHub 下载完成！"
+                    # 检查是否安装了 Node.js
+                    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+                    if ($nodeCmd) {
+                        Write-Info "检测到 Node.js，使用 Node.js 下载（更稳定）..."
+
+                        # 创建临时的 Node.js 下载脚本
+                        $nodeScript = @"
+const https = require('https');
+const fs = require('fs');
+const url = '$($claudeUrl.Replace('\', '\\'))';
+const dest = '$($claudePath.Replace('\', '\\'))';
+
+console.log('开始下载...');
+const file = fs.createWriteStream(dest);
+https.get(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+}, (response) => {
+    if (response.statusCode === 302 || response.statusCode === 301) {
+        https.get(response.headers.location, (res) => {
+            const total = parseInt(res.headers['content-length'], 10);
+            let downloaded = 0;
+            res.on('data', (chunk) => {
+                downloaded += chunk.length;
+                const percent = ((downloaded / total) * 100).toFixed(1);
+                process.stdout.write('\r下载进度: ' + percent + '%');
+            });
+            res.pipe(file);
+            file.on('finish', () => {
+                file.close();
+                console.log('\n下载完成！');
+            });
+        }).on('error', (err) => {
+            fs.unlink(dest, () => {});
+            console.error('下载失败:', err.message);
+            process.exit(1);
+        });
+    } else {
+        const total = parseInt(response.headers['content-length'], 10);
+        let downloaded = 0;
+        response.on('data', (chunk) => {
+            downloaded += chunk.length;
+            const percent = ((downloaded / total) * 100).toFixed(1);
+            process.stdout.write('\r下载进度: ' + percent + '%');
+        });
+        response.pipe(file);
+        file.on('finish', () => {
+            file.close();
+            console.log('\n下载完成！');
+        });
+    }
+}).on('error', (err) => {
+    fs.unlink(dest, () => {});
+    console.error('下载失败:', err.message);
+    process.exit(1);
+});
+"@
+                        $nodeScriptPath = Join-Path $downloadDir "download.js"
+                        $nodeScript | Set-Content -Path $nodeScriptPath -Encoding UTF8
+
+                        # 执行 Node.js 下载
+                        $nodeProcess = Start-Process -FilePath "node" -ArgumentList $nodeScriptPath -NoNewWindow -Wait -PassThru
+
+                        # 清理临时脚本
+                        Remove-Item $nodeScriptPath -Force -ErrorAction SilentlyContinue
+
+                        if ($nodeProcess.ExitCode -eq 0 -and (Test-Path $claudePath)) {
+                            Write-Ok "使用 Node.js 下载完成！"
+                        } else {
+                            throw "Node.js 下载失败"
+                        }
+                    } else {
+                        # 使用 PowerShell 下载
+                        Write-Info "正在下载（约 50-100MB，请耐心等待）..."
+                        $webClient = New-Object System.Net.WebClient
+                        $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                        $webClient.DownloadFile($claudeUrl, $claudePath)
+                        Write-Ok "从 GitHub 下载完成！"
+                    }
                 } catch {
                     # 最后的尝试：提供手动下载指引
                     Write-Err "自动下载失败：$($_.Exception.Message)"
