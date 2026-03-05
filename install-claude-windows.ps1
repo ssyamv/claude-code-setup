@@ -469,11 +469,21 @@ if (-not $script:SkipInstall) {
                         $webClient.DownloadFile($nodeUrl, $nodeMsi)
 
                         Write-Ok "下载完成！"
-                        Write-Info "正在静默安装 Node.js（约 30 秒）..."
+                        Write-Info "正在安装 Node.js（需要管理员权限，约 30 秒）..."
                         Write-Host ""
 
-                        # 静默安装 Node.js
-                        $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeMsi, "/qn", "/norestart" -Wait -PassThru
+                        # 检查是否有管理员权限
+                        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+                        if ($isAdmin) {
+                            # 有管理员权限，静默安装
+                            Write-Info "检测到管理员权限，正在静默安装..."
+                            $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeMsi, "/qn", "/norestart" -Wait -PassThru
+                        } else {
+                            # 没有管理员权限，提升权限安装
+                            Write-Info "正在请求管理员权限（会弹出 UAC 提示）..."
+                            $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeMsi, "/qb", "/norestart" -Verb RunAs -Wait -PassThru
+                        }
 
                         if ($msiProcess.ExitCode -eq 0) {
                             Write-Ok "Node.js 安装成功！"
