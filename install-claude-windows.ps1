@@ -402,14 +402,53 @@ if (-not $script:SkipInstall) {
     try {
         # 运行官方 PowerShell 安装脚本
         Write-Info "正在下载官方安装脚本..."
-        $installScript = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" -ErrorAction Stop
 
-        if ([string]::IsNullOrWhiteSpace($installScript)) {
-            throw "下载的安装脚本为空"
+        # 使用正确的方式下载并执行安装脚本
+        # 添加 User-Agent 和其他必要的头信息
+        $headers = @{
+            'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
 
-        Write-Info "正在执行安装..."
-        & ([scriptblock]::Create($installScript))
+        try {
+            $installScript = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" -Headers $headers -ErrorAction Stop
+        } catch {
+            # 如果主 URL 失败，尝试备用方案：直接从 GitHub releases 下载
+            Write-Warn "主安装源连接失败，尝试备用方案..."
+
+            # 创建安装目录
+            $installDir = "$env:USERPROFILE\.local\bin"
+            if (-not (Test-Path $installDir)) {
+                New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+            }
+
+            # 下载 claude.exe
+            Write-Info "正在从 GitHub 下载 Claude Code..."
+            $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
+            $claudePath = Join-Path $installDir "claude.exe"
+
+            Invoke-WebRequest -Uri $claudeUrl -OutFile $claudePath -Headers $headers -ErrorAction Stop
+            Write-Ok "Claude Code 下载完成！"
+
+            # 添加到 PATH
+            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+            if ($userPath -notlike "*$installDir*") {
+                [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
+                Write-Ok "已添加到系统 PATH"
+            }
+
+            # 跳过脚本执行部分
+            $installScript = $null
+        }
+
+        if ($installScript -and -not [string]::IsNullOrWhiteSpace($installScript)) {
+            # 检查是否下载到了 HTML 而不是脚本
+            if ($installScript -match "<!DOCTYPE|<html") {
+                throw "下载的内容是 HTML 页面而不是安装脚本，请检查网络连接或使用备用安装方式"
+            }
+
+            Write-Info "正在执行安装..."
+            & ([scriptblock]::Create($installScript))
+        }
 
         Write-Host ""
         Write-Line
