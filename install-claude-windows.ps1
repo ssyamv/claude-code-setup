@@ -433,6 +433,75 @@ if (-not $script:SkipInstall) {
             $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
             $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
 
+            # 如果没有 Node.js，提供安装选项
+            if (-not $nodeCmd) {
+                Write-Host ""
+                Write-Host "  检测到系统未安装 Node.js" -ForegroundColor Yellow
+                Write-Host "  Node.js 可以让安装过程更快速、更稳定" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "  是否现在安装 Node.js？（推荐）" -ForegroundColor Cyan
+                Write-Host "  • 选择 Y：自动安装 Node.js，然后用 npm 安装 Claude Code（推荐）" -ForegroundColor White
+                Write-Host "  • 选择 N：跳过，使用传统下载方式（较慢，可能不稳定）" -ForegroundColor White
+                Write-Host ""
+
+                $installNode = Read-Host "  是否安装 Node.js？[Y/n]"
+
+                if ($installNode -notmatch "^[Nn]$") {
+                    Write-Info "正在安装 Node.js..."
+                    Write-Host ""
+
+                    # 检查是否有 winget
+                    $wingetCmd = Get-Command winget -ErrorAction SilentlyContinue
+                    if ($wingetCmd) {
+                        Write-Info "使用 winget 安装 Node.js LTS 版本..."
+                        $wingetProcess = Start-Process -FilePath "winget" -ArgumentList "install", "--id", "OpenJS.NodeJS.LTS", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements" -NoNewWindow -Wait -PassThru
+
+                        if ($wingetProcess.ExitCode -eq 0) {
+                            Write-Ok "Node.js 安装成功！"
+
+                            # 刷新 PATH
+                            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                                        [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+                            # 重新检测
+                            $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+                            $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+
+                            if ($nodeCmd -and $npmCmd) {
+                                Write-Ok "Node.js 和 npm 已就绪！"
+                            } else {
+                                Write-Warn "Node.js 安装完成，但可能需要重启 PowerShell 才能生效"
+                                Write-Info "继续使用传统下载方式..."
+                            }
+                        } else {
+                            Write-Warn "Node.js 安装失败，继续使用传统下载方式..."
+                        }
+                    } else {
+                        # 没有 winget，提供手动安装指引
+                        Write-Warn "未检测到 winget（Windows 包管理器）"
+                        Write-Host ""
+                        Write-Host "  请手动安装 Node.js：" -ForegroundColor Yellow
+                        Write-Host "  1. 访问：https://nodejs.org/zh-cn/" -ForegroundColor Cyan
+                        Write-Host "  2. 下载并安装 LTS 版本" -ForegroundColor Cyan
+                        Write-Host "  3. 安装完成后重新运行本脚本" -ForegroundColor Cyan
+                        Write-Host ""
+
+                        $openBrowser = Read-Host "  是否现在打开 Node.js 下载页面？[Y/n]"
+                        if ($openBrowser -notmatch "^[Nn]$") {
+                            Start-Process "https://nodejs.org/zh-cn/"
+                            Write-Host ""
+                            Write-Info "请在安装 Node.js 后重新运行本脚本以获得最佳体验"
+                            Write-Info "现在将继续使用传统下载方式..."
+                            Write-Host ""
+                            Start-Sleep -Seconds 3
+                        }
+                    }
+                } else {
+                    Write-Info "跳过 Node.js 安装，使用传统下载方式..."
+                }
+                Write-Host ""
+            }
+
             if ($nodeCmd -and $npmCmd) {
                 Write-Info "检测到 Node.js 和 npm，使用 npm 安装（推荐方式）..."
                 Write-Host ""
