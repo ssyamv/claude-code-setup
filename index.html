@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code 教程中心</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 48px;
+    }
+    .header h1 {
+      font-size: 48px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      transition: transform 0.3s, box-shadow 0.3s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+    }
+    .card-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1a1b2e;
+    }
+    .card-desc {
+      font-size: 15px;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    .card-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-top: 12px;
+    }
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 48px;
+      opacity: 0.8;
+      font-size: 14px;
+    }
+    @media (max-width: 768px) {
+      .header h1 { font-size: 36px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 Claude Code 教程中心</h1>
+      <p>从零开始，掌握 AI 辅助开发与设计</p>
+    </div>
+    
+    <div class="cards">
+      <a href="claude-code-guide.html" class="card">
+        <div class="card-icon">📚</div>
+        <div class="card-title">Claude Code 完全入门指南</div>
+        <div class="card-desc">零基础也能学会的详细教程，从安装到实战，手把手教你使用 Claude Code 进行 AI 辅助编程。</div>
+      </a>
+      
+      <a href="claude_cowork_教程.html" class="card">
+        <div class="card-icon">💻</div>
+        <div class="card-title">Claude Cowork 使用教程</div>
+        <div class="card-desc">桌面版 Claude Code 使用指南，了解如何在本地环境中高效使用 AI 助手。</div>
+      </a>
+      
+      <a href="pencil-ai-tutorial.html" class="card">
+        <div class="card-icon">✏️</div>
+        <div class="card-title">Pencil × Claude Code AI 设计工具</div>
+        <div class="card-desc">用自然语言驱动设计工作流，实现 AI 辅助的 UI/UX 设计，从描述到成品一气呵成。</div>
+        <span class="card-badge">✨ 最新</span>
+      </a>
+    </div>
+    
+    <div class="footer">
+      <p>由 Claude 生成 · 持续更新中</p>
+      <p style="margin-top: 8px;">
+        <a href="https://github.com/ssyamv/claude-code-setup" style="color: white; text-decoration: none;">
+          📦 GitHub 仓库
+        </a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
