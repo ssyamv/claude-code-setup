@@ -450,7 +450,7 @@ if (-not $script:SkipInstall) {
             }
 
             # 获取最新版本号
-            Write-Info "正��获取最新版本信息..."
+            Write-Info "正在获取最新版本信息..."
             $gcsBucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
             try {
                 $version = Invoke-RestMethod -Uri "$gcsBucket/latest" -ErrorAction Stop
@@ -460,8 +460,11 @@ if (-not $script:SkipInstall) {
                 $zipUrl = "$gcsBucket/$version/claude-code-$platform.zip"
                 $zipPath = Join-Path $downloadDir "claude-code-$platform.zip"
 
-                Write-Info "正在下载 Claude Code..."
-                Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -ErrorAction Stop
+                Write-Info "正在下载 Claude Code（约 50-100MB，请耐心等待）..."
+                # 使用 WebClient 以支持更好的错误处理
+                $webClient = New-Object System.Net.WebClient
+                $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                $webClient.DownloadFile($zipUrl, $zipPath)
                 Write-Ok "下载完成！"
 
                 Write-Info "正在解压..."
@@ -479,11 +482,39 @@ if (-not $script:SkipInstall) {
 
             } catch {
                 # 如果 GCS 也失败，尝试 GitHub releases
-                Write-Warn "官方源下载失败，尝试 GitHub releases..."
-                $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
-                $claudePath = Join-Path $installDir "claude.exe"
-                Invoke-WebRequest -Uri $claudeUrl -OutFile $claudePath -Headers $headers -ErrorAction Stop
-                Write-Ok "从 GitHub 下载完成！"
+                Write-Warn "官方源下载失败（$($_.Exception.Message)）"
+                Write-Info "尝试从 GitHub releases 下载..."
+
+                try {
+                    $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
+                    $claudePath = Join-Path $installDir "claude.exe"
+
+                    Write-Info "正在下载（约 50-100MB，请耐心等待）..."
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    $webClient.DownloadFile($claudeUrl, $claudePath)
+                    Write-Ok "从 GitHub 下载完成！"
+                } catch {
+                    # 最后的尝试：提供手动下载指引
+                    Write-Err "自动下载失败：$($_.Exception.Message)"
+                    Write-Host ""
+                    Write-Host "  可能的原因：" -ForegroundColor Yellow
+                    Write-Host "  1. 网络连接不稳定或速度较慢" -ForegroundColor Yellow
+                    Write-Host "  2. 需要配置代理才能访问 GitHub/Google" -ForegroundColor Yellow
+                    Write-Host "  3. 防火墙或杀毒软件拦截了下载" -ForegroundColor Yellow
+                    Write-Host ""
+                    Write-Host "  手动安装方法：" -ForegroundColor Cyan
+                    Write-Host "  1. 在浏览器中打开以下任一链接下载：" -ForegroundColor White
+                    Write-Host "     • $claudeUrl" -ForegroundColor Gray
+                    Write-Host "     或" -ForegroundColor White
+                    Write-Host "     • $zipUrl" -ForegroundColor Gray
+                    Write-Host ""
+                    Write-Host "  2. 将下载的文件重命名为 claude.exe" -ForegroundColor White
+                    Write-Host "  3. 移动到：$installDir" -ForegroundColor White
+                    Write-Host "  4. 重启 PowerShell 后输入 claude 即可使用" -ForegroundColor White
+                    Write-Host ""
+                    throw "自动下载失败，请参考上述手动安装方法"
+                }
             }
 
             # 添加到 PATH
