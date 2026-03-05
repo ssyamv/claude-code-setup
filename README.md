@@ -6,6 +6,7 @@
 
 - [Claude Code 完全入门指南](https://ssyamv.github.io/claude-code-setup/claude-code-guide.html) - 零基础也能学会的详细教程
 - [Claude Cowork 使用教程](https://ssyamv.github.io/claude-code-setup/claude_cowork_教程.html) - 桌面版使用指南
+- [Pencil × Claude Code AI 设计工具教程](https://ssyamv.github.io/claude-code-setup/pencil-ai-tutorial.html) - 用自然语言驱动设计工作流 ✨新
 
 ## 支持平台
 
