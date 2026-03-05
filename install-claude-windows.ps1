@@ -576,6 +576,16 @@ if (-not $script:SkipInstall) {
                         Write-Ok "Claude Code 安装成功！"
                         Write-Host ""
 
+                        # npm 全局安装会创建 .ps1 脚本，需要确保执行策略允许运行
+                        Write-Info "正在配置 PowerShell 执行策略以允许运行 Claude Code..."
+                        try {
+                            Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction Stop
+                            Write-Ok "执行策略配置完成"
+                        } catch {
+                            Write-Warn "执行策略配置失败，可能需要手动设置"
+                        }
+                        Write-Host ""
+
                         # npm 全局安装会自动添加到 PATH，无需手动配置
                         # 刷新当前会话的 PATH
                         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
