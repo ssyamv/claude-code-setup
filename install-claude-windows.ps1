@@ -558,9 +558,19 @@ if (-not $script:SkipInstall) {
                 Write-Host ""
 
                 try {
+                    # 配置 npm 使用国内镜像源（淘宝镜像）
+                    Write-Info "正在配置 npm 国内镜像源..."
+                    & npm config set registry https://registry.npmmirror.com 2>$null
+                    Write-Ok "镜像源配置完成"
+                    Write-Host ""
+
                     # 使用 npm 全局安装
                     Write-Info "正在执行：npm install -g @anthropic-ai/claude-code"
-                    $npmProcess = Start-Process -FilePath "npm" -ArgumentList "install", "-g", "@anthropic-ai/claude-code" -NoNewWindow -Wait -PassThru
+                    Write-Info "这可能需要 1-3 分钟，请耐心等待..."
+                    Write-Host ""
+
+                    # 使用 Start-Process 并设置超时
+                    $npmProcess = Start-Process -FilePath "npm" -ArgumentList "install", "-g", "@anthropic-ai/claude-code", "--verbose" -NoNewWindow -Wait -PassThru
 
                     if ($npmProcess.ExitCode -eq 0) {
                         Write-Ok "Claude Code 安装成功！"
@@ -577,7 +587,13 @@ if (-not $script:SkipInstall) {
                         throw "npm 安装失败，退出码：$($npmProcess.ExitCode)"
                     }
                 } catch {
-                    Write-Warn "npm 安装失败（$($_.Exception.Message)），尝试手动下载..."
+                    Write-Warn "npm 安装失败（$($_.Exception.Message)）"
+                    Write-Info "尝试���复默认镜像源并重试..."
+
+                    # 恢复默认镜像源
+                    & npm config set registry https://registry.npmjs.org 2>$null
+
+                    Write-Info "尝试手动下载..."
                     $script:NpmInstallSuccess = $false
                 }
             }
