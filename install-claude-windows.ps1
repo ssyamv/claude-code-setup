@@ -429,30 +429,68 @@ if (-not $script:SkipInstall) {
         }
 
         if ($useBackupMethod) {
-            # 备用方案：直接从 Google Cloud Storage 下载（官方源）
-            Write-Info "使用备用方案：直接从官方 Google Cloud Storage 下载..."
+            # 备用方案：优先使用 npm 安装（最简单可靠）
+            $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+            $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
 
-            # 创建安装目录
-            $installDir = "$env:USERPROFILE\.local\bin"
-            $downloadDir = "$env:USERPROFILE\.claude\downloads"
-            if (-not (Test-Path $installDir)) {
-                New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-            }
-            if (-not (Test-Path $downloadDir)) {
-                New-Item -ItemType Directory -Path $downloadDir -Force | Out-Null
+            if ($nodeCmd -and $npmCmd) {
+                Write-Info "检测到 Node.js 和 npm，使用 npm 安装（推荐方式）..."
+                Write-Host ""
+
+                try {
+                    # 使用 npm 全局安装
+                    Write-Info "正在执行：npm install -g @anthropic-ai/claude-code"
+                    $npmProcess = Start-Process -FilePath "npm" -ArgumentList "install", "-g", "@anthropic-ai/claude-code" -NoNewWindow -Wait -PassThru
+
+                    if ($npmProcess.ExitCode -eq 0) {
+                        Write-Ok "Claude Code 安装成功！"
+                        Write-Host ""
+
+                        # npm 全局安装会自动添加到 PATH，无需手动配置
+                        # 刷新当前会话的 PATH
+                        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                                    [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+                        # 跳过后续的手动下载步骤
+                        $script:NpmInstallSuccess = $true
+                    } else {
+                        throw "npm 安装失败，退出码：$($npmProcess.ExitCode)"
+                    }
+                } catch {
+                    Write-Warn "npm 安装失败（$($_.Exception.Message)），尝试手动下载..."
+                    $script:NpmInstallSuccess = $false
+                }
             }
 
-            # 检测系统架构
-            if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
-                $platform = "win32-arm64"
-            } else {
-                $platform = "win32-x64"
-            }
+            # 如果 npm 安装失败或没有 npm，使用手动下载方式
+            if (-not $script:NpmInstallSuccess) {
+                Write-Info "使用备用方案：直接从官方 Google Cloud Storage 下载..."
 
-            # 获取最新版本号
-            Write-Info "正在获取最新版本信息..."
-            $gcsBucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
-            try {
+            # 如果 npm 安装失败或没有 npm，使用手动下载方式
+            if (-not $script:NpmInstallSuccess) {
+                Write-Info "使用备用方案：直接从官方 Google Cloud Storage 下载..."
+
+                # 创建安装目录
+                $installDir = "$env:USERPROFILE\.local\bin"
+                $downloadDir = "$env:USERPROFILE\.claude\downloads"
+                if (-not (Test-Path $installDir)) {
+                    New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+                }
+                if (-not (Test-Path $downloadDir)) {
+                    New-Item -ItemType Directory -Path $downloadDir -Force | Out-Null
+                }
+
+                # 检测系统架构
+                if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
+                    $platform = "win32-arm64"
+                } else {
+                    $platform = "win32-x64"
+                }
+
+                # 获取最新版本号
+                Write-Info "正在获取最新版本信息..."
+                $gcsBucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
+                try {
                 $version = Invoke-RestMethod -Uri "$gcsBucket/latest" -ErrorAction Stop
                 Write-Info "最新版本：$version"
 
@@ -640,11 +678,14 @@ https.get(url, {
                 }
             }
 
-            # 添加到 PATH
-            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-            if ($userPath -notlike "*$installDir*") {
-                [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
-                Write-Ok "已添加到系统 PATH"
+                # 添加到 PATH（仅在手动下载时需要，npm 会自动处理）
+                if (-not $script:NpmInstallSuccess) {
+                    $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+                    if ($userPath -notlike "*$installDir*") {
+                        [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
+                        Write-Ok "已添加到系统 PATH"
+                    }
+                }
             }
         } elseif ($installScript -and -not [string]::IsNullOrWhiteSpace($installScript)) {
             Write-Info "正在执行官方安装脚本..."
