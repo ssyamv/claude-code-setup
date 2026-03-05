@@ -409,11 +409,24 @@ if (-not $script:SkipInstall) {
             'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
 
+        $useBackupMethod = $false
+
         try {
             $installScript = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" -Headers $headers -ErrorAction Stop
+
+            # 检查是否下载到了 HTML 而不是脚本
+            if ($installScript -match "<!DOCTYPE|<html") {
+                Write-Warn "下载的内容是 HTML 页面，切换到备用安装方式..."
+                $useBackupMethod = $true
+            }
         } catch {
-            # 如果主 URL 失败，尝试备用方案：直接从 GitHub releases 下载
-            Write-Warn "主安装源连接失败，尝试备用方案..."
+            Write-Warn "主安装源连接失败，切换到备用方案..."
+            $useBackupMethod = $true
+        }
+
+        if ($useBackupMethod) {
+            # 备用方案：直接从 GitHub releases 下载
+            Write-Info "使用备用方案：直接从 GitHub 下载 Claude Code..."
 
             # 创建安装目录
             $installDir = "$env:USERPROFILE\.local\bin"
@@ -422,7 +435,7 @@ if (-not $script:SkipInstall) {
             }
 
             # 下载 claude.exe
-            Write-Info "正在从 GitHub 下载 Claude Code..."
+            Write-Info "正在下载 claude.exe..."
             $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
             $claudePath = Join-Path $installDir "claude.exe"
 
@@ -435,18 +448,8 @@ if (-not $script:SkipInstall) {
                 [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
                 Write-Ok "已添加到系统 PATH"
             }
-
-            # 跳过脚本执行部分
-            $installScript = $null
-        }
-
-        if ($installScript -and -not [string]::IsNullOrWhiteSpace($installScript)) {
-            # 检查是否下载到了 HTML 而不是脚本
-            if ($installScript -match "<!DOCTYPE|<html") {
-                throw "下载的内容是 HTML 页面而不是安装脚本，请检查网络连接或使用备用安装方式"
-            }
-
-            Write-Info "正在执行安装..."
+        } elseif ($installScript -and -not [string]::IsNullOrWhiteSpace($installScript)) {
+            Write-Info "正在执行官方安装脚本..."
             & ([scriptblock]::Create($installScript))
         }
 
