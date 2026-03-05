@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pencil × Claude Code · AI 设计工具完整教程</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:       #6C63FF;
+      --brand-light: #EEF0FF;
+      --brand-dark:  #4B44CC;
+      --accent:      #FF6584;
+      --success:     #00C896;
+      --warn:        #FFB800;
+      --bg:          #F8F9FF;
+      --surface:     #FFFFFF;
+      --border:      #E4E6F0;
+      --text:        #1A1B2E;
+      --muted:       #6B7280;
+      --code-bg:     #1E1F2E;
+      --code-text:   #A9B1D6;
+      --radius:      12px;
+      --shadow:      0 4px 24px rgba(108,99,255,.10);
+      --shadow-lg:   0 12px 48px rgba(108,99,255,.18);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--brand); border-radius: 3px; }
+
+    /* ── Layout ── */
+    .wrapper { display: flex; min-height: 100vh; position: relative; }
+
+    /* ── Mobile Menu Toggle ── */
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 200;
+      background: var(--brand);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      font-size: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle { display: block; }
+      .wrapper { flex-direction: column; }
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 260px;
+      min-width: 260px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 32px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar {
+        position: fixed;
+        left: 0;
+        transform: translateX(-100%);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      }
+      #sidebar.active {
+        transform: translateX(0);
+      }
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 24px 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .sidebar-logo .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #fff;
+    }
+    .sidebar-logo .logo-text { font-weight: 700; font-size: 15px; line-height: 1.3; }
+    .sidebar-logo .logo-text span { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .nav-group { margin-bottom: 8px; }
+    .nav-group-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); padding: 8px 24px 4px;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 24px; text-decoration: none;
+      color: var(--text); font-size: 14px; border-radius: 0;
+      transition: background .15s, color .15s;
+      border-left: 3px solid transparent;
+    }
+    .nav-link:hover { background: var(--brand-light); color: var(--brand); }
+    .nav-link.active { background: var(--brand-light); color: var(--brand); border-left-color: var(--brand); font-weight: 600; }
+    .nav-link .icon { font-size: 15px; width: 20px; text-align: center; }
+
+    /* ── Main Content ── */
+    main {
+      flex: 1;
+      padding: 0 0 80px;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      main {
+        padding: 60px 20px 80px;
+      }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #6C63FF 0%, #9F96FF 50%, #FF6584 100%);
+      padding: 72px 48px 64px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: .6;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3);
+      color: #fff; padding: 4px 14px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; margin-bottom: 20px;
+      backdrop-filter: blur(6px);
+    }
+    .hero h1 {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 17px;
+      opacity: .88;
+      max-width: 560px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 32px;
+      }
+      .hero p {
+        font-size: 16px;
+      }
+    }
+    .hero-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 28px; }
+    .hero-tag {
+      background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
+      color: #fff; padding: 5px 14px; border-radius: 999px; font-size: 13px;
+    }
+
+    /* ── Sections ── */
+    section {
+      padding: 56px 48px 0;
+      scroll-margin-top: 20px;
+    }
+    section:last-of-type { padding-bottom: 0; }
+
+    .section-header { margin-bottom: 32px; }
+    .section-number {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--brand); color: #fff; font-size: 13px; font-weight: 700;
+      margin-bottom: 10px;
+    }
+    h2 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 10px;
+      position: relative;
+      padding-bottom: 12px;
+    }
+    h2::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      border-radius: 2px;
+    }
+    h3 {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 28px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    p { color: #374151; margin-bottom: 14px; line-height: 1.8; }
+    p:last-child { margin-bottom: 0; }
+
+    ul, ol {
+      margin: 16px 0;
+      padding-left: 24px;
+      color: #374151;
+      line-height: 1.8;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    li:last-child {
+      margin-bottom: 0;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+      margin: 20px 0;
+    }
+
+    a {
+      color: var(--brand);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: var(--brand-dark);
+      text-decoration: underline;
+    }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0 0; }
+
+    /* ── Cards ── */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+      box-shadow: var(--shadow);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .card-icon { font-size: 30px; margin-bottom: 12px; }
+    .card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .card p { font-size: 13px; color: var(--muted); margin: 0; }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+    .step {
+      display: flex; gap: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+    }
+    .step-num {
+      min-width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+      border-radius: 10px; color: #fff; font-weight: 700;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+    }
+    .step-content h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .step-content p { font-size: 14px; color: var(--muted); margin: 0; }
+
+    /* ── Code Block ── */
+    .code-block {
+      background: var(--code-bg); border-radius: var(--radius);
+      overflow: hidden; margin: 20px 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
+      position: relative;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+      background: rgba(255,255,255,.04);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dots span {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .code-dots .red { background: #FF5F56; }
+    .code-dots .yellow { background: #FFBD2E; }
+    .code-dots .green { background: #27C93F; }
+    .code-lang {
+      font-size: 11px; color: rgba(255,255,255,.4);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .code-copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 18px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.7);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .code-copy-btn:hover {
+      background: rgba(255,255,255,.2);
+      color: white;
+    }
+    .code-copy-btn.copied {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+    .code-block pre {
+      padding: 20px 22px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: var(--code-text);
+      overflow-x: auto;
+    }
+    .code-block pre .kw  { color: #BB9AF7; }
+    .code-block pre .str { color: #9ECE6A; }
+    .code-block pre .cmt { color: #565F89; font-style: italic; }
+    .code-block pre .fn  { color: #7DCFFF; }
+    .code-block pre .num { color: #FF9E64; }
+    .code-block pre .var { color: #73DACA; }
+
+    /* ── Keyboard Shortcuts ── */
+    kbd, .kbd {
+      display: inline-block;
+      padding: 3px 8px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-shadow: 0 2px 0 rgba(0,0,0,.08), inset 0 0 0 1px rgba(255,255,255,.5);
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin: 24px 0;
+      border-left: 4px solid;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .callout:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+    .callout-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .callout-body {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .callout-body strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+    .callout.tip    { background: #F0FFF9; border-color: var(--success); color: #065F46; }
+    .callout.warn   { background: #FFFBEB; border-color: var(--warn); color: #92400E; }
+    .callout.info   { background: var(--brand-light); border-color: var(--brand); color: #3730A3; }
+    .callout.danger { background: #FFF5F5; border-color: var(--accent); color: #9B1C1C; }
+
+    /* ── Prompt Example ── */
+    .prompt-box {
+      background: linear-gradient(135deg, #F5F3FF, #EEF0FF);
+      border: 2px solid #C7C2FF;
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      margin: 20px 0;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(108,99,255,.12);
+    }
+    .prompt-box::before {
+      content: '💬 你可以这样说';
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(108,99,255,.3);
+    }
+    .prompt-box p {
+      font-size: 15px;
+      color: #3730A3;
+      font-family: inherit;
+      margin: 0;
+      line-height: 1.9;
+      font-weight: 500;
+    }
+
+    /* ── Feature Table ── */
+    .feature-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .feature-table th {
+      background: var(--brand);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 14px 18px;
+      text-align: left;
+    }
+    .feature-table td {
+      padding: 14px 18px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .feature-table tr:last-child td { border-bottom: none; }
+    .feature-table tr:hover td {
+      background: var(--brand-light);
+      transition: background 0.2s;
+    }
+
+    @media (max-width: 768px) {
+      .feature-table {
+        font-size: 13px;
+      }
+      .feature-table th,
+      .feature-table td {
+        padding: 10px 12px;
+      }
+    }
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-green { background: #D1FAE5; color: #065F46; }
+    .badge-blue  { background: var(--brand-light); color: var(--brand-dark); }
+    .badge-warn  { background: #FEF3C7; color: #92400E; }
+
+    /* ── Comparison Grid ── */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .compare-card { border-radius: var(--radius); padding: 22px; border: 1.5px solid; }
+    .compare-card.before { border-color: #FCA5A5; background: #FFF5F5; }
+    .compare-card.after  { border-color: #6EE7B7; background: #F0FFF9; }
+    .compare-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+    .compare-card.before h4 { color: #B91C1C; }
+    .compare-card.after  h4 { color: #065F46; }
+    .compare-card ul { list-style: none; font-size: 13px; }
+    .compare-card ul li { margin-bottom: 8px; display: flex; align-items: flex-start; gap: 6px; }
+    .compare-card.before li::before { content: '✗'; color: #B91C1C; flex-shrink: 0; }
+    .compare-card.after  li::before { content: '✓'; color: #059669; flex-shrink: 0; }
+
+    /* ── Workflow ── */
+    .workflow {
+      display: flex; align-items: center; gap: 0; margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .workflow-node {
+      background: var(--surface); border: 1.5px solid var(--brand);
+      border-radius: 10px; padding: 14px 18px; text-align: center;
+      min-width: 110px; flex: 1;
+    }
+    .workflow-node .wn-icon { font-size: 24px; margin-bottom: 6px; }
+    .workflow-node .wn-label { font-size: 12px; font-weight: 600; color: var(--brand); }
+    .workflow-arrow {
+      font-size: 22px; color: var(--brand); padding: 0 6px; flex-shrink: 0;
+    }
+
+    /* ── Tips List ── */
+    .tips-list { list-style: none; margin: 16px 0; }
+    .tips-list li {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .tips-list li:last-child { border-bottom: none; }
+    .tips-list .tip-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── TOC progress ── */
+    .toc-progress {
+      height: 3px; background: var(--brand);
+      position: sticky; top: 0; z-index: 200;
+      transform-origin: left;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 72px; padding: 40px 48px;
+      background: var(--surface); border-top: 1px solid var(--border);
+      text-align: center; color: var(--muted); font-size: 13px;
+    }
+    footer a { color: var(--brand); text-decoration: none; }
+
+    /* ── OS Tab switcher ── */
+    .os-tabs { display: flex; gap: 0; margin: 20px 0 0; border-bottom: 2px solid var(--border); }
+    .os-tab {
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -3px;
+      user-select: none;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 8px 8px 0 0;
+    }
+    .os-tab:hover {
+      color: var(--brand);
+      background: var(--brand-light);
+    }
+    .os-tab.active {
+      color: var(--brand);
+      border-bottom-color: var(--brand);
+      background: var(--brand-light);
+    }
+    .os-panel { display: none; }
+    .os-panel.active { display: block; }
+
+    /* ── Inline Step List ── */
+    .inline-steps { counter-reset: istep; list-style: none; margin: 16px 0; }
+    .inline-steps li {
+      counter-increment: istep;
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .inline-steps li:last-child { border-bottom: none; }
+    .inline-steps li::before {
+      content: counter(istep);
+      min-width: 26px; height: 26px; border-radius: 50%;
+      background: var(--brand-light); color: var(--brand);
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .inline-steps li strong { display: inline; margin-bottom: 4px; font-size: 14px; }
+
+    /* ── Connection Diagram ── */
+    .connect-diagram {
+      background: var(--code-bg); border-radius: var(--radius);
+      padding: 32px; margin: 24px 0;
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; flex-wrap: nowrap; overflow-x: auto;
+    }
+    .cd-node {
+      background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.12);
+      border-radius: 12px; padding: 18px 22px; text-align: center; min-width: 140px;
+      flex-shrink: 0;
+    }
+    .cd-node .cd-icon { font-size: 28px; margin-bottom: 8px; }
+    .cd-node .cd-label { font-size: 13px; color: #A9B1D6; font-weight: 600; line-height: 1.3; }
+    .cd-node .cd-sub { font-size: 10px; color: rgba(169,177,214,.55); margin-top: 3px; }
+    .cd-arrow {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 16px; color: #7DCFFF; font-size: 11px; gap: 4px;
+      flex-shrink: 0;
+    }
+    .cd-arrow .ca-line {
+      width: 50px; height: 2px;
+      background: linear-gradient(90deg, #7DCFFF, #BB9AF7);
+      border-radius: 1px; position: relative;
+    }
+    .cd-arrow .ca-line::after {
+      content: '▶'; position: absolute; right: -8px; top: -7px;
+      color: #BB9AF7; font-size: 14px;
+    }
+    .cd-arrow .ca-label { font-size: 10px; color: #565F89; white-space: nowrap; }
+
+    /* ── Checklist ── */
+    .checklist { list-style: none; margin: 16px 0; }
+    .checklist li {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 8px 0; font-size: 14px; border-bottom: 1px solid var(--border);
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li .ck { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Verify block ── */
+    .verify-block {
+      background: #F0FFF9; border: 1.5px solid var(--success); border-radius: var(--radius);
+      padding: 20px 24px; margin: 20px 0;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .verify-icon { font-size: 24px; flex-shrink: 0; }
+    .verify-body h4 { font-size: 14px; font-weight: 700; color: #065F46; margin-bottom: 8px; }
+    .verify-body p { font-size: 13px; color: #065F46; margin: 0; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+      .hero { padding: 48px 24px; }
+      .hero h1 { font-size: 28px; }
+      section { padding: 40px 24px 0; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .workflow { flex-direction: column; }
+      .workflow-arrow { transform: rotate(90deg); }
+      .connect-diagram {
+        flex-direction: column;
+        padding: 24px 16px;
+        overflow-x: visible;
+      }
+      .cd-node {
+        min-width: 100%;
+        max-width: 280px;
+      }
+      .cd-arrow {
+        flex-direction: column;
+        padding: 8px 0;
+        transform: rotate(90deg);
+      }
+      .cd-arrow .ca-line { width: 30px; }
+    }
+
+    /* ── Back to Top Button ── */
+    .back-to-top {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      background: var(--brand);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .back-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .back-to-top:hover {
+      background: var(--brand-dark);
+      transform: translateY(-3px);
+    }
+
+    /* ── Mobile Overlay ── */
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .mobile-overlay.active {
+      opacity: 1;
+    }
+    @media (max-width: 768px) {
+      .mobile-overlay {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mobile Menu Toggle -->
+<button class="menu-toggle" onclick="toggleMobileMenu()">☰</button>
+
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+
+<div class="wrapper">
+
+  <!-- ── Sidebar ── -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">✏️</div>
+      <div class="logo-text">
+        Pencil × Claude
+        <span>AI 设计工具教程</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">入门</div>
+      <a href="#intro" class="nav-link active"><span class="icon">🏠</span>工具介绍</a>
+      <a href="#setup" class="nav-link"><span class="icon">⚙️</span>环境配置</a>
+      <a href="#install-pencil" class="nav-link" style="padding-left:40px;font-size:13px"><span class="icon">📥</span>安装 Pencil</a>
+      <a href="#connect-mcp" class="nav-link" style="padding-left:40px;font-size:13px"><span class="icon">🔌</span>连接 Claude Code</a>
+      <a href="#verify" class="nav-link" style="padding-left:40px;font-size:13px"><span class="icon">✅</span>验证连接</a>
+      <a href="#workflow" class="nav-link"><span class="icon">🔄</span>基础工作流</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">核心功能</div>
+      <a href="#batch-design" class="nav-link"><span class="icon">🧩</span>批量设计操作</a>
+      <a href="#components" class="nav-link"><span class="icon">📦</span>组件系统</a>
+      <a href="#layout" class="nav-link"><span class="icon">📐</span>布局与排版</a>
+      <a href="#style-guide" class="nav-link"><span class="icon">🎨</span>风格与主题</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">进阶技巧</div>
+      <a href="#prompt" class="nav-link"><span class="icon">💬</span>提示词技巧</a>
+      <a href="#code-gen" class="nav-link"><span class="icon">💻</span>代码生成</a>
+      <a href="#tips" class="nav-link"><span class="icon">⚡</span>最佳实践</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">参考</div>
+      <a href="#api-ref" class="nav-link"><span class="icon">📖</span>提示词速查</a>
+      <a href="#faq" class="nav-link"><span class="icon">❓</span>常见问题</a>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main>
+    <div class="toc-progress" id="progress"></div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">✨ 2026 最新版本</div>
+      <h1>使用 Pencil + Claude Code<br>实现 AI 驱动的设计工作流</h1>
+      <p>面向 UI/UX 设计师的完整实战教程——用自然语言指令生成、修改、迭代设计稿，彻底释放创作效率。</p>
+      <div class="hero-tags">
+        <span class="hero-tag">🎨 界面设计</span>
+        <span class="hero-tag">🤖 AI 辅助</span>
+        <span class="hero-tag">💻 Claude Code</span>
+        <span class="hero-tag">📱 响应式</span>
+        <span class="hero-tag">🧩 组件驱动</span>
+      </div>
+    </div>
+
+    <!-- ─── 1. 工具介绍 ─── -->
+    <section id="intro">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <h2>什么是 Pencil + Claude Code？</h2>
+        <p>Pencil 是一款原生支持 AI 的矢量设计工具，通过 MCP（Model Context Protocol）与 Claude 深度集成，让你用自然语言驱动整个设计流程。</p>
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">✏️</div>
+          <h4>Pencil 设计工具</h4>
+          <p>专业的 UI/UX 设计软件，支持组件库、设计变量、响应式布局，是 AI 协作的画布。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🤖</div>
+          <h4>Claude 的「眼睛和手」</h4>
+          <p>通过插件连接后，Claude 能直接「看到」你的画布，并在上面添加、修改、调整设计内容。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <h4>实时双向连接</h4>
+          <p>两个工具之间建立实时通道，你说一句话，Claude 的操作几秒内就会出现在 Pencil 画布上。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h4>批量执行能力</h4>
+          <p>一句话可以同时完成多个设计动作：新建框架、填入内容、调整样式、生成配图……</p>
+        </div>
+      </div>
+
+      <div class="compare-grid" style="margin-top:28px">
+        <div class="compare-card before">
+          <h4>传统设计流程</h4>
+          <ul>
+            <li>手动拖拽每个元素</li>
+            <li>逐一调整样式属性</li>
+            <li>组件复用需手动操作</li>
+            <li>设计→开发交付耗时</li>
+            <li>修改需重复大量操作</li>
+          </ul>
+        </div>
+        <div class="compare-card after">
+          <h4>Pencil + Claude 工作流</h4>
+          <ul>
+            <li>自然语言描述即可生成</li>
+            <li>批量修改样式一句话搞定</li>
+            <li>AI 自动识别并复用组件</li>
+            <li>一键导出可用代码</li>
+            <li>迭代修改极速完成</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 2. 环境配置 ─── -->
+    <section id="setup">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <h2>环境配置</h2>
+        <p>本章节详细介绍 <strong>Pencil 的安装</strong>以及与 Claude Code 的连接方式。Claude Code 本身的安装步骤请参阅配套的《Claude Code 入门指南》。</p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">📎</div>
+        <div class="callout-body">
+          <strong>前置条件</strong><br>
+          请先确保你已完成 Claude Code 的安装与登录（参见《Claude Code 入门指南》），并已激活 Anthropic API 访问权限，再继续以下步骤。
+        </div>
+      </div>
+
+      <!-- 整体流程概览 -->
+      <h3 style="margin-top:28px">整体配置流程一览</h3>
+
+      <div class="connect-diagram">
+        <div class="cd-node">
+          <div class="cd-icon">📥</div>
+          <div class="cd-label">下载 Pencil</div>
+          <div class="cd-sub">Step 1</div>
+        </div>
+        <div class="cd-arrow">
+          <div class="ca-line"></div>
+          <div class="ca-label"></div>
+        </div>
+        <div class="cd-node">
+          <div class="cd-icon">⚙️</div>
+          <div class="cd-label">启用 MCP 插件</div>
+          <div class="cd-sub">Step 2</div>
+        </div>
+        <div class="cd-arrow">
+          <div class="ca-line"></div>
+          <div class="ca-label"></div>
+        </div>
+        <div class="cd-node">
+          <div class="cd-icon">🔌</div>
+          <div class="cd-label">配置 Claude Code</div>
+          <div class="cd-sub">Step 3</div>
+        </div>
+        <div class="cd-arrow">
+          <div class="ca-line"></div>
+          <div class="ca-label"></div>
+        </div>
+        <div class="cd-node">
+          <div class="cd-icon">✅</div>
+          <div class="cd-label">验证连接</div>
+          <div class="cd-sub">Step 4</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 2a. 安装 Pencil ─── -->
+    <section id="install-pencil" style="padding-top:36px">
+
+      <h3 style="margin:0 0 6px;font-size:22px">Step 1 — 下载并安装 Pencil</h3>
+      <p style="margin-bottom:20px">Pencil 是跨平台的桌面应用，支持 macOS、Windows 和 Linux，选择对应系统的安装方式：</p>
+
+      <!-- OS Tabs -->
+      <div class="os-tabs" id="os-tabs">
+        <div class="os-tab active" data-os="mac">🍎 macOS</div>
+        <div class="os-tab" data-os="win">🪟 Windows</div>
+        <div class="os-tab" data-os="linux">🐧 Linux</div>
+      </div>
+
+      <!-- macOS -->
+      <div class="os-panel active" id="panel-mac">
+        <ul class="inline-steps">
+          <li>
+            <div>
+              <strong>前往官网下载：</strong>打开浏览器，访问 <strong>pencil.design/download</strong>，点击「Download for macOS」下载安装文件。如果你用的是 M1/M2/M3 芯片的 Mac，选带「Apple Silicon」字样的版本；老款 Intel Mac 选「Intel」版本。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>安装应用</strong><br>
+              双击下载好的安装文件，把 Pencil 的图标拖进「应用程序」文件夹，就像安装其他 Mac 应用一样。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>首次打开时的安全提示</strong><br>
+              macOS 可能会弹出「无法验证开发者」的提示。遇到这种情况，打开「系统设置 → 隐私与安全性」，找到底部的 Pencil 提示，点击「仍要打开」即可。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>确认版本是否够新</strong><br>
+              打开 Pencil 后，点击菜单栏左上角「Pencil → 关于 Pencil」，版本号需要是 <strong>2.0 或以上</strong>才支持与 Claude Code 连接。
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Windows -->
+      <div class="os-panel" id="panel-win">
+        <ul class="inline-steps">
+          <li>
+            <div>
+              <strong>前往官网下载：</strong>打开浏览器，访问 <strong>pencil.design/download</strong>，点击「Download for Windows」，下载安装程序（系统需要 Windows 10 或更新版本）。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>运行安装程序</strong><br>
+              双击下载好的安装文件，按照向导提示一步步点「下一步」即可。建议勾选「创建桌面快捷方式」，方便以后快速打开。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>处理安全警告</strong><br>
+              第一次运行时，Windows 可能会弹出蓝色安全警告框。点击「更多信息」，然后点「仍要运行」就好。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>允许防火墙访问</strong><br>
+              安装过程中，Windows 防火墙可能会弹出询问。点击「允许访问」，这样 Pencil 才能和 Claude Code 正常通信。
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Linux -->
+      <div class="os-panel" id="panel-linux">
+        <ul class="inline-steps">
+          <li>
+            <div>
+              <strong>前往官网下载：</strong>访问 <strong>pencil.design/download</strong>，根据你的系统选择下载格式：Ubuntu/Debian 用户选「.deb」；Fedora 用户选「.rpm」；不确定选哪个就选「AppImage」（通用格式，适合所有 Linux 发行版）。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>AppImage 格式（最简单）</strong><br>
+              下载后，右键点击文件 → 「属性」→「权限」，勾选「允许作为程序执行」，然后双击即可运行，无需安装。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>.deb 或 .rpm 格式</strong><br>
+              双击下载的安装包，系统会自动调用软件商店完成安装，与安装普通软件体验一致。
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>如果 AppImage 无法启动</strong><br>
+              部分 Linux 版本需要额外安装一个叫「libfuse2」的依赖库。如果双击后没有反应，请在「软件中心」搜索并安装 libfuse2，然后再试。
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="callout warn" style="margin-top:20px">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <strong>版本太旧会连不上</strong><br>
+          Pencil 需要 <strong>2.0 版本以上</strong>才能与 Claude Code 连接。安装完成后，记得在「关于 Pencil」页面确认一下版本号。
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 2b. 连接 Claude Code ─── -->
+    <section id="connect-mcp" style="padding-top:36px">
+
+      <h3 style="margin:0 0 6px;font-size:22px">Step 2 &amp; 3 — 开启连接开关，让两个工具握手</h3>
+      <p style="margin-bottom:20px">安装完 Pencil 之后，需要分别在 Pencil 和 Claude Code 各开一个开关，两边才能互相识别。整个过程大概 3 分钟，就像给两台设备配对蓝牙。</p>
+
+      <!-- Sub-step A: Pencil 侧 -->
+      <div class="step" style="margin-bottom:16px">
+        <div class="step-num" style="background:linear-gradient(135deg,#FF6584,#FF9E64)">A</div>
+        <div class="step-content">
+          <h4>第一步：在 Pencil 里打开「Claude Code 连接」开关</h4>
+          <p>打开 Pencil，进入软件的偏好设置，找到「集成」页面，把 Claude Code 的开关拨到开启。</p>
+        </div>
+      </div>
+
+      <ul class="inline-steps" style="margin-top:0">
+        <li>
+          <div>
+            <strong>打开 Pencil 的偏好设置：</strong>Mac 用户点击屏幕左上角「Pencil」菜单 → 选「偏好设置」。Windows/Linux 用户点击顶部「编辑」菜单 → 选「偏好设置」。或直接用快捷键：Mac 按 <kbd>⌘,</kbd>，Windows 按 <kbd>Ctrl+,</kbd>。
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>切换到「集成」标签页：</strong>偏好设置窗口打开后，找到并点击「集成（Integrations）」选项卡。
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>开启 Claude Code 连接：</strong>找到「Claude Code」选项，把旁边的开关拨到开启状态（蓝色或绿色）。开关右侧会出现一个绿色圆点，表示连接正在运行。
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>不要关闭 Pencil：</strong>开关打开后，保持 Pencil 在运行中（可以最小化，但不能退出）。只要 Pencil 在后台开着，Claude Code 随时都能读取你的设计文件。
+          </div>
+        </li>
+      </ul>
+
+      <div class="callout tip" style="margin-top:4px">
+        <div class="callout-icon">🟢</div>
+        <div class="callout-body">
+          <strong>绿点 = 一切正常</strong><br>
+          开关旁边的小圆点是绿色，说明 Pencil 已经准备好接受 Claude Code 的连接了。如果是红色，参考下方的「连接失败」排查表。
+        </div>
+      </div>
+
+      <!-- Sub-step B: Claude Code 侧 -->
+      <div class="step" style="margin:24px 0 16px">
+        <div class="step-num" style="background:linear-gradient(135deg,#6C63FF,#BB9AF7)">B</div>
+        <div class="step-content">
+          <h4>在 Claude Code 中添加 Pencil 连接</h4>
+          <p>打开 Claude Code 应用，在设置页面找到「MCP 服务器」（或「集成」）选项，添加 Pencil 插件，让 Claude 获得操作你设计文件的能力。</p>
+        </div>
+      </div>
+
+      <ul class="inline-steps" style="margin-top:0">
+        <li>
+          <div>
+            <strong>打开 Claude Code 设置：</strong>启动 Claude Code 后，点击右上角的设置图标（⚙️），进入「MCP 服务器」或「插件」页面。
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>添加 Pencil 服务器：</strong>点击「添加服务器」或「连接新工具」，在弹出的对话框中选择「Pencil」，或手动输入服务器地址 <strong>localhost:8765</strong>（与 Pencil 偏好设置中的端口一致）。
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>保存并重启：</strong>保存设置后，完全退出并重新启动 Claude Code，新的连接才会生效。重启后在启动日志中应能看到「Pencil 已连接」的提示。
+          </div>
+        </li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-icon">💡</div>
+        <div class="callout-body">
+          <strong>高级配置（给熟悉配置文件的用户）</strong><br>
+          如果你熟悉 JSON 配置文件，也可以直接编辑 Claude Code 的配置文件手动添加 Pencil 服务器——具体方法可参考《Claude Code 入门指南》中的「MCP 服务器配置」章节。
+        </div>
+      </div>
+
+      <h3 style="margin-top:28px">确认两边都已就绪</h3>
+      <p>连接成功的关键：<strong>Pencil 必须先启动，Claude Code 再启动</strong>。就像插上插头（Pencil）才能通电（Claude Code）。每次工作前，先打开 Pencil 并确认绿色状态灯，再开启 Claude Code 对话。</p>
+
+      <div class="callout warn">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <strong>顺序很重要</strong><br>
+          如果先启动了 Claude Code 再打开 Pencil，连接可能不会自动建立。此时只需在 Claude Code 中输入「重新连接 Pencil」，或完全重启 Claude Code 即可。
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 2c. 验证连接 ─── -->
+    <section id="verify" style="padding-top:36px">
+
+      <h3 style="margin:0 0 6px;font-size:22px">Step 4 — 测试一下，确认连接成功</h3>
+      <p style="margin-bottom:20px">完成配置后，花 1 分钟对照这份清单确认一遍，再开始正式设计：</p>
+
+      <ul class="checklist">
+        <li>
+          <span class="ck">✅</span>
+          <div>Pencil 正在运行，「集成」面板里的 Claude Code 开关是<strong>绿色</strong>状态</div>
+        </li>
+        <li>
+          <span class="ck">✅</span>
+          <div>Pencil 里已经打开了一个设计文件（新建一个空白文件也行）</div>
+        </li>
+        <li>
+          <span class="ck">✅</span>
+          <div>Claude Code 已启动，启动界面中能看到「Pencil 已连接」或类似提示</div>
+        </li>
+        <li>
+          <span class="ck">✅</span>
+          <div>在对话中输入测试指令，Claude 能正确返回当前编辑器信息</div>
+        </li>
+      </ul>
+
+      <p style="margin-top:16px">在 Claude Code 对话框中输入以下测试指令来验证连通性：</p>
+
+      <div class="prompt-box">
+        <p>你现在能看到我的 Pencil 画布吗？告诉我当前打开的是什么文件，以及画布上有哪些内容。</p>
+      </div>
+
+      <div class="verify-block">
+        <div class="verify-icon">🟢</div>
+        <div class="verify-body">
+          <h4>连接成功的响应示例</h4>
+          <p>Claude 会回复类似：「当前打开的文件是 dashboard，画布上有 2 个页面：Overview Screen（1440×900）和 Mobile Screen（375×812）。」能看到这样的回复，说明连接完全正常，可以开始设计了！</p>
+        </div>
+      </div>
+
+      <!-- 故障排查 -->
+      <h3 style="margin-top:28px">⚠️ 连接失败？对照这份排查清单</h3>
+
+      <table class="feature-table" style="margin-top:12px">
+        <thead>
+          <tr><th>你看到了什么</th><th>原因</th><th>怎么解决</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Claude 说「找不到 Pencil」或「无法连接设计工具」</td>
+            <td>Pencil 未运行，或 MCP 开关未开启</td>
+            <td>先打开 Pencil，在「偏好设置 → 集成」中确认绿色状态灯亮起，再重启 Claude Code</td>
+          </tr>
+          <tr>
+            <td>Pencil 集成面板显示红色「● Error」</td>
+            <td>端口被其他程序占用</td>
+            <td>在 Pencil 集成设置中把端口号改为 8766 或其他数字，保存后重新开启开关</td>
+          </tr>
+          <tr>
+            <td>Claude 连上了，但说「画布是空的」</td>
+            <td>Pencil 里没有打开任何文件</td>
+            <td>在 Pencil 中新建或打开一个 .pen 设计文件，然后重新提问</td>
+          </tr>
+          <tr>
+            <td>一切正常但 Claude 无法修改画布</td>
+            <td>Claude Code 是在 Pencil 启动前打开的</td>
+            <td>完全退出 Claude Code，确认 Pencil 已运行且绿灯常亮，再重新启动 Claude Code</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <div class="callout-icon">🔧</div>
+        <div class="callout-body">
+          <strong>万能重置方法</strong><br>
+          遇到任何奇怪的连接问题，试试这三步：① 关闭 Claude Code → ② 关闭 Pencil → ③ 先重新打开 Pencil 并等绿灯亮起，再打开 Claude Code。这能解决 90% 的连接问题。
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 3. 基础工作流 ─── -->
+    <section id="workflow">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <h2>基础工作流</h2>
+        <p>了解 Pencil + Claude 的核心协作模式，建立正确的工作习惯。</p>
+      </div>
+
+      <div class="workflow">
+        <div class="workflow-node">
+          <div class="wn-icon">💬</div>
+          <div class="wn-label">自然语言描述</div>
+        </div>
+        <div class="workflow-arrow">→</div>
+        <div class="workflow-node">
+          <div class="wn-icon">🔍</div>
+          <div class="wn-label">AI 分析上下文</div>
+        </div>
+        <div class="workflow-arrow">→</div>
+        <div class="workflow-node">
+          <div class="wn-icon">⚡</div>
+          <div class="wn-label">执行设计操作</div>
+        </div>
+        <div class="workflow-arrow">→</div>
+        <div class="workflow-node">
+          <div class="wn-icon">👁️</div>
+          <div class="wn-label">截图审查</div>
+        </div>
+        <div class="workflow-arrow">→</div>
+        <div class="workflow-node">
+          <div class="wn-icon">🔄</div>
+          <div class="wn-label">迭代优化</div>
+        </div>
+      </div>
+
+      <h3>Claude 在设计中能做什么？</h3>
+      <p>你不需要记住任何指令名称——只需用自然语言描述想要的结果，Claude 会自动选择合适的操作。下面列出的是 Claude 在背后会用到的能力，了解它们可以帮你更好地描述需求：</p>
+      <table class="feature-table">
+        <thead>
+          <tr>
+            <th>Claude 能做的事</th>
+            <th>你可以这样说</th>
+            <th>常用程度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>📂 读取当前画布状态</td>
+            <td>「告诉我画布上现在有什么」「现在打开的是哪个文件？」</td>
+            <td><span class="badge badge-green">每次开始都用</span></td>
+          </tr>
+          <tr>
+            <td>🧩 列出所有可用组件</td>
+            <td>「这个设计系统里有哪些组件可以用？」</td>
+            <td><span class="badge badge-green">每次开始都用</span></td>
+          </tr>
+          <tr>
+            <td>✏️ 在画布上创建和修改内容</td>
+            <td>「帮我创建一个登录页」「把这个卡片的标题改成…」</td>
+            <td><span class="badge badge-green">核心操作</span></td>
+          </tr>
+          <tr>
+            <td>📸 截图查看当前设计效果</td>
+            <td>「截一下现在的样子让我看看」</td>
+            <td><span class="badge badge-blue">完成每块后用</span></td>
+          </tr>
+          <tr>
+            <td>🎨 获取视觉风格灵感</td>
+            <td>「我要做一个暗黑风的 SaaS 产品，帮我找个合适的风格参考」</td>
+            <td><span class="badge badge-blue">新项目时用</span></td>
+          </tr>
+          <tr>
+            <td>📏 检查布局规范</td>
+            <td>「帮我按照移动端设计规范来」「Web 端的常见布局是什么？」</td>
+            <td><span class="badge badge-blue">按需使用</span></td>
+          </tr>
+          <tr>
+            <td>🔍 排查布局问题</td>
+            <td>「检查一下有没有内容超出边界或被遮住的地方」</td>
+            <td><span class="badge badge-warn">出问题时用</span></td>
+          </tr>
+          <tr>
+            <td>🌗 设置品牌色和主题</td>
+            <td>「把主色调改成 #6C63FF，同时支持深色模式」</td>
+            <td><span class="badge badge-warn">品牌定义时用</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 4. 批量设计操作 ─── -->
+    <section id="batch-design">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <h2>Claude 能对设计稿做什么？</h2>
+        <p>一次对话，Claude 可以同时完成多个设计动作——从新增元素、调整内容，到生成配图，全部在 Pencil 画布上实时呈现。</p>
+      </div>
+
+      <h3>7 种基本设计动作</h3>
+      <p>你不需要记这些名字，只需用自然语言描述，Claude 会自动选择合适的方式来执行：</p>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">➕</div>
+          <h4>新建元素</h4>
+          <p>在画布或某个容器内创建新的框架、文字、图片、矩形等任何元素。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <h4>复制已有元素</h4>
+          <p>把现有的元素或组件复制一份，同时可以修改复制体的内容和属性。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">✏️</div>
+          <h4>修改属性</h4>
+          <p>改变元素的颜色、大小、文字内容、圆角、间距等任意视觉属性。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔄</div>
+          <h4>替换元素</h4>
+          <p>把某个位置的元素整体换成另一种，常用于把占位符换成真实组件。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">↔️</div>
+          <h4>移动位置</h4>
+          <p>将元素移动到画布的另一个区域或另一个容器内，调整层级顺序。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🗑️</div>
+          <h4>删除元素</h4>
+          <p>删除指定的元素及其内部所有内容（此操作不可撤销，请谨慎使用）。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🖼️</div>
+          <h4>生成配图</h4>
+          <p>用 AI 生成插图，或从 Unsplash 搜索真实照片，直接填充到指定区域。</p>
+        </div>
+      </div>
+
+      <h3>实战示例：用一段话搭建登录页</h3>
+      <p>下面是一个真实的对话示例，你只需这样描述，Claude 就能把整个登录页搭建出来：</p>
+
+      <div class="prompt-box">
+        <p>帮我新建一个 1440×900 的登录页。左侧 600px 宽，紫色背景，放品牌 Logo 文字和一张 AI 生成的配图。右侧自动填满，白色背景，从上到下依次是：大标题「欢迎回来」、副标题说明文字、邮箱输入框、密码输入框、全宽蓝色登录按钮。输入框和按钮请用设计系统里已有的组件。</p>
+      </div>
+
+      <div class="verify-block" style="margin-top:20px">
+        <div class="verify-icon">✨</div>
+        <div class="verify-body">
+          <h4>Claude 会做什么</h4>
+          <p>收到上面这段描述后，Claude 会自动完成：创建页面框架、划分左右两栏、添加品牌文字、生成 AI 插图、填写标题文案、调用设计系统中的 Input 和 Button 组件，并在完成后截图给你确认效果。</p>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <strong>复杂页面建议分步描述</strong><br>
+          对于内容较多的页面，建议分 2～3 轮完成：第一轮搭整体框架，第二轮填充各区域内容，第三轮调整细节样式。每轮结束后让 Claude 截图确认，再进入下一轮。
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 5. 组件系统 ─── -->
+    <section id="components">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <h2>善用你的组件库</h2>
+        <p>如果你的设计文件里已经有组件库（按钮、输入框、卡片等），Claude 可以直接调用这些组件，就像你在 Pencil 里拖拽组件一样——但速度更快。</p>
+      </div>
+
+      <h3>第一步：告诉 Claude 你有哪些组件</h3>
+      <p>每次开始新的设计任务，先问一句，让 Claude 了解你的"设计词汇库"：</p>
+
+      <div class="prompt-box">
+        <p>帮我列出这个设计文件里所有可以复用的组件，告诉我每个组件叫什么名字、大概长什么样。</p>
+      </div>
+
+      <p>Claude 会回复类似这样的列表：</p>
+
+      <div class="card-grid" style="margin-top:12px">
+        <div class="card" style="border-color:#C7C2FF;background:#F5F3FF">
+          <div class="card-icon">🔘</div>
+          <h4>Button（主按钮）</h4>
+          <p>紫色填充，白色文字，圆角 8px，高度 44px。可调整文字内容和宽度。</p>
+        </div>
+        <div class="card" style="border-color:#C7C2FF;background:#F5F3FF">
+          <div class="card-icon">📝</div>
+          <h4>InputField（输入框）</h4>
+          <p>带边框的文字输入框，可自定义占位符文字和图标。全宽填充。</p>
+        </div>
+        <div class="card" style="border-color:#C7C2FF;background:#F5F3FF">
+          <div class="card-icon">📊</div>
+          <h4>StatCard（数据卡片）</h4>
+          <p>白色卡片，带标题、数值、趋势箭头。宽 280px，可调文案和颜色。</p>
+        </div>
+      </div>
+
+      <h3>第二步：用描述调用和定制组件</h3>
+      <p>知道有哪些组件后，就可以直接在描述中引用，并告诉 Claude 要修改哪些内容：</p>
+
+      <div class="prompt-box">
+        <p>在 stats 区域横向排列 3 个数据卡片，使用 StatCard 组件。内容分别是：</p>
+        <p style="margin-top:8px; padding-left:16px">
+        第一个：标题「月活跃用户」，数值「12,840」，趋势向上（绿色）<br>
+        <br>
+        第二个：标题「本月收入」，数值「¥68,200」，趋势向上（绿色）<br>
+        <br>
+        第三个：标题「平均停留时长」，数值「4.2 分钟」，趋势向下（红色）
+        </p>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon">✅</div>
+        <div class="callout-body">
+          <strong>养成一个好习惯</strong><br>
+          每次开启新的设计会话，先让 Claude 列出可用组件，再开始正式设计。这样 Claude 就不会从零搭建那些你已经有的组件，既省时间又保持风格统一。
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 6. 布局与排版 ─── -->
+    <section id="layout">
+      <div class="section-header">
+        <div class="section-number">6</div>
+        <h2>描述布局的方式</h2>
+        <p>和 Figma 的 Auto Layout 一样，Pencil 支持横向/纵向自动排列。你只需用自然语言描述想要的布局结构，Claude 就能正确地搭建。</p>
+      </div>
+
+      <h3>几个关键概念，会让你描述更精准</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">↔️</div>
+          <h4>横向排列 vs 纵向排列</h4>
+          <p>「左右并排」= 横向；「上下堆叠」= 纵向。这是布局最基础的方向，一定要说清楚。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">↕️</div>
+          <h4>元素间距</h4>
+          <p>「元素之间留 16px 间距」——Claude 会把这个值设为 gap。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📦</div>
+          <h4>内边距（Padding）</h4>
+          <p>「容器四周留 32px 内边距」或「上下 24px、左右 32px 的内边距」。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">↔️</div>
+          <h4>固定宽度 vs 自适应</h4>
+          <p>「左侧导航固定 240px 宽」vs「右侧内容区自动填满剩余空间」。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <h4>对齐方式</h4>
+          <p>「顶部对齐」「垂直居中」「两端对齐」——和 Figma 的对齐选项一样。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📐</div>
+          <h4>常见页面尺寸</h4>
+          <p>桌面端：1440×900 或 1280×800；iPhone：375×812；iPad：768×1024。</p>
+        </div>
+      </div>
+
+      <h3>典型布局的描述示例</h3>
+
+      <div class="prompt-box" style="margin-bottom:12px">
+        <p>🖥️ <strong>三栏 Dashboard（最常见）</strong><br>
+        创建一个 1440×900 的 Dashboard 页面，三栏横向排列：左侧深色导航栏固定 240px 宽，中间主内容区自动填满，右侧浅灰详情面板固定 320px 宽。三栏高度都撑满整个页面。</p>
+      </div>
+
+      <div class="prompt-box" style="margin-bottom:12px">
+        <p>📱 <strong>移动端列表页</strong><br>
+        创建一个 375×812 的手机屏幕，纵向布局：顶部固定 56px 高的导航栏（白色背景，标题居中），中间内容区自适应高度（上下各 16px 内边距，卡片间距 12px），底部固定 60px 高的 Tab 栏。</p>
+      </div>
+
+      <div class="prompt-box">
+        <p>🌐 <strong>网站首页 Hero 区域</strong><br>
+        创建一个全宽 1440×640 的 Hero 区域，内容水平居中，左右各留 80px 边距。内容区纵向排列：顶部小标签，下面是大标题（字号 56px，加粗），再下面是副标题说明文字（字号 18px，灰色），最底部是两个横向排列的按钮，间距 12px。整体垂直居中。</p>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 7. 风格与主题 ─── -->
+    <section id="style-guide">
+      <div class="section-header">
+        <div class="section-number">7</div>
+        <h2>风格与主题</h2>
+        <p>使用风格指南和设计变量，让你的设计有一致的视觉语言，并支持深色/浅色模式切换。</p>
+      </div>
+
+      <h3>获取设计灵感</h3>
+      <p>在开始新项目前，先让 Claude 推荐一套视觉风格，为整个设计定下基调：</p>
+
+      <div class="prompt-box">
+        <p>我想设计一款面向创意人群的 SaaS 产品，风格现代、有设计感，带一点暗黑氛围。请帮我获取合适的风格指南。</p>
+      </div>
+
+      <h3>设置品牌色和全局主题</h3>
+      <p>告诉 Claude 你的品牌颜色和视觉规范，它会把这些定义为全局变量，整个设计文件都会统一应用：</p>
+
+      <div class="prompt-box">
+        <p>帮我为这个设计文件设置全局变量：</p>
+        <p style="margin-top:8px; padding-left:16px">
+        主色调：#6C63FF（深色模式下改为 #9F96FF）<br>
+        <br>
+        背景色：白色（深色模式下改为 #1A1B2E）<br>
+        <br>
+        正文颜色：#1A1B2E（深色模式下改为 #F0F0FF）<br>
+        <br>
+        圆角默认值：12px<br>
+        <br>
+        字体：Inter
+        </p>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon">🎨</div>
+        <div class="callout-body">
+          <strong>换品牌色的神器</strong><br>
+          如果整个设计稿需要换一套颜色（比如把所有灰色 #CCCCCC 换成 #6B7280），直接告诉 Claude：「把设计稿里所有用到 #CCCCCC 的地方全部替换成 #6B7280」——它会扫描整个文件批量替换，一秒搞定。
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 8. 提示词技巧 ─── -->
+    <section id="prompt">
+      <div class="section-header">
+        <div class="section-number">8</div>
+        <h2>提示词技巧</h2>
+        <p>与 AI 协作设计的质量，很大程度上取决于你如何描述需求。以下是经过验证的提示词模式。</p>
+      </div>
+
+      <h3>✅ 高质量提示词结构</h3>
+
+      <div class="prompt-box">
+        <p>帮我在 [目标帧 ID] 中创建一个 [组件类型]，用于 [使用场景]。</p>
+        <p style="margin-top:8px; padding-left:16px">
+        风格要求：[视觉风格描述]<br>
+        <br>
+        内容：[具体文字/数据]<br>
+        <br>
+        布局：[排列方式]，宽度 [xxx]px，高度 [xxx]px<br>
+        <br>
+        请使用设计系统中的 [已知组件名] 作为基础。
+        </p>
+      </div>
+
+      <h3>实际示例对比</h3>
+
+      <div class="compare-grid">
+        <div class="compare-card before">
+          <h4>❌ 模糊提示词</h4>
+          <ul>
+            <li>做一个好看的按钮</li>
+            <li>加一些卡片</li>
+            <li>设计一个登录页</li>
+            <li>改改颜色</li>
+          </ul>
+        </div>
+        <div class="compare-card after">
+          <h4>✅ 精准提示词</h4>
+          <ul>
+            <li>创建一个圆角 8px、背景色 #6C63FF、高度 44px、全宽的主要操作按钮</li>
+            <li>在 stats 框架中插入 3 个宽 280px 的数据统计卡片，引用 StatCard 组件</li>
+            <li>创建 1440x900 的登录页，左侧品牌区（紫色背景 + AI 插图），右侧邮箱+密码表单</li>
+            <li>将画布中所有 #CCCCCC 的颜色替换为 #6B7280</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>常用提示词模板</h3>
+      <ul class="tips-list">
+        <li>
+          <span class="tip-icon">📱</span>
+          <div>
+            <strong>移动端屏幕</strong><br>
+            "帮我在画布右侧空白处创建一个 375x812 的 iPhone 屏幕，包含顶部导航、内容区和底部 Tab 栏，使用竖向布局。"
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">📊</span>
+          <div>
+            <strong>数据看板</strong><br>
+            "在主内容区创建一个数据仪表板，顶部 4 个 KPI 指标卡横排，中间一个大折线图，底部左右各一个表格和饼图。"
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">🔄</span>
+          <div>
+            <strong>批量修改</strong><br>
+            "将所有文字颜色从 #000000 替换为 #1A1B2E，将所有填充色 #F0F0F0 替换为 #F8F9FF，保持整体视觉一致性。"
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">🖼️</span>
+          <div>
+            <strong>配图生成</strong><br>
+            "在 hero-image 框架中生成一张 AI 插图，主题是'现代科技感办公室，紫色调，极简风格'。"
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 9. 代码生成 ─── -->
+    <section id="code-gen">
+      <div class="section-header">
+        <div class="section-number">9</div>
+        <h2>从设计到代码</h2>
+        <p>Pencil + Claude 不只是设计工具，还能将设计稿直接转换为可用的前端代码。</p>
+      </div>
+
+      <div class="card-grid" style="margin-bottom:24px">
+        <div class="card">
+          <div class="card-icon">⚛️</div>
+          <h4>React + Tailwind</h4>
+          <p>生成基于 React 函数组件 + Tailwind CSS 类名的现代化代码。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <h4>CSS Variables</h4>
+          <p>自动提取设计变量，生成 CSS 自定义属性（--color-primary 等）。</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📦</div>
+          <h4>组件代码</h4>
+          <p>基于设计系统中的可复用组件，生成对应的 React/Vue 组件代码。</p>
+        </div>
+      </div>
+
+      <div class="prompt-box">
+        <p>请读取 login-page 框架的完整结构，并生成对应的 React + Tailwind v4 代码。要求：</p>
+        <p style="margin-top:8px; padding-left:16px">
+        - 使用函数式组件和 TypeScript<br>
+        <br>
+        - 表单有完整的状态管理<br>
+        <br>
+        - 响应式适配移动端<br>
+        <br>
+        - 严格还原设计稿中的间距、颜色、圆角
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">ℹ️</div>
+        <div class="callout-body">
+          <strong>代码生成前置步骤</strong><br>
+          在让 Claude 生成代码之前，先告诉它「请先读取我的设计规范和变量设置」，然后再说「生成代码」——Claude 会自动提取你的颜色变量、字体设置等，让生成的代码与设计稿高度一致。
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 10. 最佳实践 ─── -->
+    <section id="tips">
+      <div class="section-header">
+        <div class="section-number">10</div>
+        <h2>最佳实践</h2>
+        <p>来自实战经验的黄金法则，帮你避坑、提效。</p>
+      </div>
+
+      <ul class="tips-list">
+        <li>
+          <span class="tip-icon">🔍</span>
+          <div>
+            <strong>开始前先问「现在有什么」</strong><br>
+            每次开始新的设计任务，先让 Claude 读取一下当前画布状态和可用组件，这样 Claude 才能准确地在正确位置添加内容，而不是在空白处另起炉灶。
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">📸</span>
+          <div>
+            <strong>完成每个区域后都截图看一眼</strong><br>
+            设计完一个区块（比如顶部导航），立刻让 Claude 截图给你看。及时发现文字溢出、对齐错误，比等整个页面做完再返工要省很多时间。
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">🧩</span>
+          <div>
+            <strong>已有组件就直接用，别让 Claude 重复造轮子</strong><br>
+            如果你的设计文件里已经有按钮、卡片等组件，明确告诉 Claude「用现有的 Button 组件」，而不是说「做一个按钮」——前者会复用你的设计，后者可能会重新创建。
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">🎨</span>
+          <div>
+            <strong>描述颜色用色值，不要说「漂亮的蓝色」</strong><br>
+            描述颜色时直接给出十六进制色值（如 #6C63FF），比用「蓝紫色」「深一点的紫」更精准，Claude 能 100% 还原你想要的效果。
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">📐</span>
+          <div>
+            <strong>加新页面前，告诉 Claude 放在哪里</strong><br>
+            画布上已经有很多内容时，告诉 Claude「在现有内容的右侧/下方空白处新建」，避免新内容压在已有设计上。
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">⚡</span>
+          <div>
+            <strong>复杂页面分 3 步走</strong><br>
+            第一轮：整体框架（几栏、大致区域划分）→ 第二轮：各区域内容填充 → 第三轮：细节样式微调。每轮结束后截图确认再继续，不要一次性描述太多。
+          </div>
+        </li>
+        <li>
+          <span class="tip-icon">🎯</span>
+          <div>
+            <strong>视觉效果不对就说「哪里不对」</strong><br>
+            如果 Claude 做出来的效果不是你想要的，直接描述问题所在：「左边那列太宽了，改成 200px」「标题和副标题之间间距太大了，缩小一点」——比重新描述整个需求更高效。
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 11. 提示词速查 ─── -->
+    <section id="api-ref">
+      <div class="section-header">
+        <div class="section-number">11</div>
+        <h2>设计场景提示词速查</h2>
+        <p>遇到不知道怎么开口的时候，从这里复制一句改改就能用。</p>
+      </div>
+
+      <h3>🏗️ 新建页面 / 框架</h3>
+      <ul class="tips-list">
+        <li><span class="tip-icon">📄</span><div>帮我新建一个 <strong>1440×900</strong> 的桌面端页面，命名为「首页」</div></li>
+        <li><span class="tip-icon">📱</span><div>在画布右侧空白处新建一个 <strong>375×812</strong> 的手机屏幕，命名为「移动端-首页」</div></li>
+        <li><span class="tip-icon">📋</span><div>把「首页」这个页面复制一份，命名为「首页-暗黑版」，放在它右边</div></li>
+      </ul>
+
+      <h3>✏️ 添加内容</h3>
+      <ul class="tips-list">
+        <li><span class="tip-icon">🔤</span><div>在顶部导航栏里加一个标题文字「Dashboard」，字号 20px，加粗，颜色 #1A1B2E</div></li>
+        <li><span class="tip-icon">🔘</span><div>用现有的 Button 组件，在表单下方添加一个全宽的「登录」按钮</div></li>
+        <li><span class="tip-icon">🖼️</span><div>在 hero-bg 这个区域生成一张 AI 插图，风格是「现代科技感、紫色调、极简」</div></li>
+        <li><span class="tip-icon">📸</span><div>在 avatar 区域放一张来自 Unsplash 的专业人像照片</div></li>
+      </ul>
+
+      <h3>✏️ 修改样式</h3>
+      <ul class="tips-list">
+        <li><span class="tip-icon">🎨</span><div>把整个设计稿里所有 <strong>#CCCCCC</strong> 的颜色替换成 <strong>#6B7280</strong></div></li>
+        <li><span class="tip-icon">📏</span><div>把左侧导航栏的宽度从 240px 改为 200px</div></li>
+        <li><span class="tip-icon">↔️</span><div>把卡片区域的元素间距改为 16px，内边距改为 24px</div></li>
+        <li><span class="tip-icon">🌗</span><div>把主色调改为 #6C63FF，深色模式下改为 #9F96FF，并应用到整个文件</div></li>
+      </ul>
+
+      <h3>🔍 检查与确认</h3>
+      <ul class="tips-list">
+        <li><span class="tip-icon">📸</span><div>截一下现在整个页面的样子，我想看看效果</div></li>
+        <li><span class="tip-icon">📂</span><div>告诉我画布上现在有哪些页面和框架</div></li>
+        <li><span class="tip-icon">🧩</span><div>列出这个文件里所有可以复用的组件</div></li>
+        <li><span class="tip-icon">🔍</span><div>检查一下有没有内容超出边框或被遮住的问题</div></li>
+      </ul>
+
+      <h3>💻 交付给开发</h3>
+      <ul class="tips-list">
+        <li><span class="tip-icon">⚛️</span><div>读取「登录页」框架的结构，生成对应的 React + Tailwind 代码，响应式适配移动端</div></li>
+        <li><span class="tip-icon">🎨</span><div>把这个文件里的所有设计变量（颜色、字体、圆角）整理成 CSS 变量格式</div></li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ─── 12. 常见问题 ─── -->
+    <section id="faq">
+      <div class="section-header">
+        <div class="section-number">12</div>
+        <h2>常见问题</h2>
+      </div>
+
+      <h3>Q：Claude 说看不到我的设计文件，怎么办？</h3>
+      <p>先确认 Pencil 已经打开，且「偏好设置 → 集成」里的 Claude Code MCP 开关是绿灯状态。然后完全退出 Claude Code，再重新启动。如果问题依旧，尝试在 Pencil 里关掉再打开那个开关。</p>
+
+      <div class="callout danger">
+        <div class="callout-icon">❗</div>
+        <div class="callout-body">
+          <strong>最常见的原因</strong><br>
+          超过 80% 的连接问题都是「先开了 Claude Code，后开了 Pencil」造成的。正确顺序：先打开 Pencil 并等绿灯亮，再打开 Claude Code。
+        </div>
+      </div>
+
+      <h3>Q：Claude 做出来的效果和我想的不一样，怎么调？</h3>
+      <p>直接告诉 Claude 哪里不对就好，比如：「左边那列太宽了，改到 200px」「按钮颜色太深，改成 #8B7CF8」「卡片之间间距太大，缩小到 12px」。Claude 会在现有基础上修改，而不是重新做。</p>
+
+      <h3>Q：一次对话说了很多，Claude 做到一半停了？</h3>
+      <p>这是正常的——Claude 每轮最多处理一定量的设计动作，复杂页面需要分几轮完成。当 Claude 停下来时，直接说「继续」或「做下一部分」即可。建议你主动把需求拆成几个步骤，每步确认后再继续。</p>
+
+      <h3>Q：如何让 Claude 记住我的设计系统组件？</h3>
+      <p>在每次对话开头问一句「列出这个文件里所有可用的组件」，Claude 就会记住当次会话中的组件信息。如果你的组件经常用到，也可以在 Pencil 的项目里建一个名叫「设计规范」的页面，把组件名称和用途写清楚，让 Claude 随时参考。</p>
+
+      <h3>Q：设计稿可以多人协作吗？</h3>
+      <p>可以，.pen 文件是普通文件格式，可以放在共享网盘（如 iCloud、Google Drive、Dropbox）上与团队共享。如果你们使用 Git，.pen 文件也完全兼容版本控制，每次重要迭代前提交一个版本，随时可以回滚。</p>
+
+      <h3>Q：中文字体显示不正常怎么解决？</h3>
+      <p>在对话中告诉 Claude：「把这个文件的默认字体改为苹方（PingFang SC）」或「改为思源黑体（Noto Sans SC）」，Claude 会把字体写入全局设计变量，整个文件统一生效。</p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>📖 Pencil × Claude Code AI 设计工具完整教程</p>
+      <p style="margin-top:8px">由 <a href="#">Claude</a> 生成 · 更新于 2026年3月</p>
+    </footer>
+  </main>
+
+</div>
+
+<script>
+  // ── 滚动进度条 ──
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const scrollTop = document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progress.style.width = pct + '%';
+  });
+
+  // ── OS Tab Switcher ──
+  document.querySelectorAll('.os-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const os = tab.dataset.os;
+      document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.os-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const panel = document.getElementById('panel-' + os);
+      if (panel) panel.classList.add('active');
+    });
+  });
+
+  // ── 导航高亮 ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+<!-- Back to Top Button -->
+<button class="back-to-top" onclick="scrollToTop()">↑</button>
+
+<script>
+  // Mobile menu toggle
+  function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.mobile-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+  }
+
+  // Back to top functionality
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Show/hide back to top button
+  window.addEventListener('scroll', function() {
+    const backToTop = document.querySelector('.back-to-top');
+    if (window.pageYOffset > 300) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  // Close mobile menu when clicking nav links
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        toggleMobileMenu();
+      }
+    });
+  });
+
+  // Add copy buttons to code blocks
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.code-block').forEach(block => {
+      const button = document.createElement('button');
+      button.className = 'code-copy-btn';
+      button.textContent = '复制';
+      button.onclick = function() {
+        const code = block.querySelector('pre').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+          button.textContent = '已复制!';
+          button.classList.add('copied');
+          setTimeout(() => {
+            button.textContent = '复制';
+            button.classList.remove('copied');
+          }, 2000);
+        });
+      };
+      block.appendChild(button);
+    });
+  });
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Add fade-in animation on scroll
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, observerOptions);
+
+  // Observe sections and callouts
+  document.querySelectorAll('section, .callout, .code-block, .prompt-box').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+
+  // Highlight active nav link on scroll
+  window.addEventListener('scroll', () => {
+    let current = '';
+    document.querySelectorAll('section[id]').forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.clientHeight;
+      if (pageYOffset >= sectionTop - 100) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === '#' + current) {
+        link.classList.add('active');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
