@@ -412,35 +412,79 @@ if (-not $script:SkipInstall) {
         $useBackupMethod = $false
 
         try {
-            $installScript = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" -Headers $headers -ErrorAction Stop
+            # 尝试下载官方安装脚本，添加更多头信息以绕过 Cloudflare
+            $installScript = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" `
+                -Headers $headers `
+                -MaximumRedirection 5 `
+                -ErrorAction Stop
 
             # 检查是否下载到了 HTML 而不是脚本
-            if ($installScript -match "<!DOCTYPE|<html") {
+            if ($installScript -match "<!DOCTYPE|<html|<title>") {
                 Write-Warn "下载的内容是 HTML 页面，切换到备用安装方式..."
                 $useBackupMethod = $true
             }
         } catch {
-            Write-Warn "主安装源连接失败，切换到备用方案..."
+            Write-Warn "主安装源连接失败（$($_.Exception.Message)），切换到备用方案..."
             $useBackupMethod = $true
         }
 
         if ($useBackupMethod) {
-            # 备用方案：直接从 GitHub releases 下载
-            Write-Info "使用备用方案：直接从 GitHub 下载 Claude Code..."
+            # 备用方案：直接从 Google Cloud Storage 下载（官方源）
+            Write-Info "使用备用方案：直接从官方 Google Cloud Storage 下载..."
 
             # 创建安装目录
             $installDir = "$env:USERPROFILE\.local\bin"
+            $downloadDir = "$env:USERPROFILE\.claude\downloads"
             if (-not (Test-Path $installDir)) {
                 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
             }
+            if (-not (Test-Path $downloadDir)) {
+                New-Item -ItemType Directory -Path $downloadDir -Force | Out-Null
+            }
 
-            # 下载 claude.exe
-            Write-Info "正在下载 claude.exe..."
-            $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
-            $claudePath = Join-Path $installDir "claude.exe"
+            # 检测系统架构
+            if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
+                $platform = "win32-arm64"
+            } else {
+                $platform = "win32-x64"
+            }
 
-            Invoke-WebRequest -Uri $claudeUrl -OutFile $claudePath -Headers $headers -ErrorAction Stop
-            Write-Ok "Claude Code 下载完成！"
+            # 获取最新版本号
+            Write-Info "正��获取最新版本信息..."
+            $gcsBucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
+            try {
+                $version = Invoke-RestMethod -Uri "$gcsBucket/latest" -ErrorAction Stop
+                Write-Info "最新版本：$version"
+
+                # 下载并解压
+                $zipUrl = "$gcsBucket/$version/claude-code-$platform.zip"
+                $zipPath = Join-Path $downloadDir "claude-code-$platform.zip"
+
+                Write-Info "正在下载 Claude Code..."
+                Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -ErrorAction Stop
+                Write-Ok "下载完成！"
+
+                Write-Info "正在解压..."
+                Expand-Archive -Path $zipPath -DestinationPath $downloadDir -Force
+
+                # 复制到安装目录
+                $exePath = Join-Path $downloadDir "claude.exe"
+                $targetPath = Join-Path $installDir "claude.exe"
+                Copy-Item -Path $exePath -Destination $targetPath -Force
+                Write-Ok "安装完成！"
+
+                # 清理临时文件
+                Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+                Remove-Item $exePath -Force -ErrorAction SilentlyContinue
+
+            } catch {
+                # 如果 GCS 也失败，尝试 GitHub releases
+                Write-Warn "官方源下载失败，尝试 GitHub releases..."
+                $claudeUrl = "https://github.com/anthropics/claude-code/releases/latest/download/claude-windows-x64.exe"
+                $claudePath = Join-Path $installDir "claude.exe"
+                Invoke-WebRequest -Uri $claudeUrl -OutFile $claudePath -Headers $headers -ErrorAction Stop
+                Write-Ok "从 GitHub 下载完成！"
+            }
 
             # 添加到 PATH
             $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
