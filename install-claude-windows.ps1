@@ -46,12 +46,6 @@ function Wait-Enter {
     Write-Host ""
 }
 
-function Test-AdminPrivileges {
-    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-}
-
 # ---- 欢迎界面 ----
 Clear-Host
 Write-Line
@@ -400,38 +394,9 @@ if (-not $script:SkipInstall) {
     Write-Host ""
 
     try {
-        # 运行官方 PowerShell 安装脚本
-        Write-Info "正在下载官方安装脚本..."
-
-        # 使用正确的方式下载并执行安装脚本
-        # 添加 User-Agent 和其他必要的头信息
-        $headers = @{
-            'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-
-        $useBackupMethod = $false
-
-        try {
-            # 尝试下载官方安装脚本，添加更多头信息以绕过 Cloudflare
-            $installScript = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" `
-                -Headers $headers `
-                -MaximumRedirection 5 `
-                -ErrorAction Stop
-
-            # 检查是否下载到了 HTML 而不是脚本
-            if ($installScript -match "<!DOCTYPE|<html|<title>") {
-                Write-Warn "下载的内容是 HTML 页面，切换到备用安装方式..."
-                $useBackupMethod = $true
-            }
-        } catch {
-            Write-Warn "主安装源连接失败（$($_.Exception.Message)），切换到备用方案..."
-            $useBackupMethod = $true
-        }
-
-        if ($useBackupMethod) {
-            # 备用方案：优先使用 npm 安装（最简单可靠）
-            $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-            $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+        # 备用方案：优先使用 npm 安装（最简单可靠）
+        $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+        $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
 
             # 如果没有 Node.js，提供安装选项
             if (-not $nodeCmd) {
@@ -598,7 +563,7 @@ if (-not $script:SkipInstall) {
                     }
                 } catch {
                     Write-Warn "npm 安装失败（$($_.Exception.Message)）"
-                    Write-Info "尝试���复默认镜像源并重试..."
+                    Write-Info "尝试恢复默认镜像源并重试..."
 
                     # 恢复默认镜像源
                     & npm config set registry https://registry.npmjs.org 2>$null
@@ -810,7 +775,7 @@ https.get(url, {
                         }
                     } else {
                         # 使用 PowerShell 下载
-                        Write-Info "正在���载（约 50-100MB，请耐心等待）..."
+                        Write-Info "正在下载（约 50-100MB，请耐心等待）..."
                         $webClient = New-Object System.Net.WebClient
                         $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 
@@ -864,10 +829,6 @@ https.get(url, {
                 [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
                 Write-Ok "已添加到系统 PATH"
             }
-        }
-        } elseif ($installScript -and -not [string]::IsNullOrWhiteSpace($installScript)) {
-            Write-Info "正在执行官方安装脚本..."
-            & ([scriptblock]::Create($installScript))
         }
 
         Write-Host ""
