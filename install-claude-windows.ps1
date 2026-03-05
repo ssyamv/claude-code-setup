@@ -535,10 +535,6 @@ if (-not $script:SkipInstall) {
             if (-not $script:NpmInstallSuccess) {
                 Write-Info "使用备用方案：直接从官方 Google Cloud Storage 下载..."
 
-            # 如果 npm 安装失败或没有 npm，使用手动下载方式
-            if (-not $script:NpmInstallSuccess) {
-                Write-Info "使用备用方案：直接从官方 Google Cloud Storage 下载..."
-
                 # 创建安装目录
                 $installDir = "$env:USERPROFILE\.local\bin"
                 $downloadDir = "$env:USERPROFILE\.claude\downloads"
