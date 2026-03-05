@@ -307,40 +307,140 @@ if [ "$SKIP_INSTALL" != true ]; then
     print_title "  📦 步骤 3/4：下载并安装 Claude Code"
     print_line
     echo ""
-    print_info "正在从官方服务器下载 Claude Code..."
-    print_info "这可能需要 1～3 分钟，请耐心等待，期间请勿关闭终端。"
-    echo ""
-    print_line
+    print_info "正在检查安装环境..."
     echo ""
 
-    # 运行官方安装脚本
-    if curl -fsSL https://claude.ai/install.sh | bash; then
+    # 检查是否已安装 Node.js 和 npm
+    if command -v node &>/dev/null && command -v npm &>/dev/null; then
+        NODE_VER=$(node --version 2>/dev/null)
+        print_ok "检测到 Node.js $NODE_VER"
+        HAS_NODE=true
+    else
+        print_warn "未检测到 Node.js"
+        echo ""
+        echo -e "  ${YELLOW}Node.js 可以让安装过程更快速、更稳定${NC}"
+        echo ""
+        echo -e "  ${BOLD}是否现在安装 Node.js？（推荐）${NC}"
+        echo -e "  ${CYAN}• 选择 Y：${NC}自动安装 Node.js，然后用 npm 安装 Claude Code（推荐）"
+        echo -e "  ${CYAN}• 选择 N：${NC}跳过，使用官方安装脚本（较慢，可能不稳定）"
+        echo ""
+        read -p "  是否安装 Node.js？[Y/n] " install_node
+
+        if [[ ! "$install_node" =~ ^[Nn]$ ]]; then
+            print_info "正在安装 Node.js..."
+            echo ""
+
+            # 检查是否安装了 Homebrew
+            if command -v brew &>/dev/null; then
+                print_info "使用 Homebrew 安装 Node.js..."
+                if brew install node; then
+                    print_ok "Node.js 安装成功！"
+                    HAS_NODE=true
+                else
+                    print_warn "Homebrew 安装失败，将使用官方安装脚本"
+                fi
+            else
+                print_warn "未检测到 Homebrew"
+                echo ""
+                echo -e "  ${YELLOW}推荐先安装 Homebrew（Mac 包管理器），然后再安装 Node.js${NC}"
+                echo ""
+                echo -e "  ${BOLD}安装 Homebrew 的命令：${NC}"
+                echo -e "  ${CYAN}/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"${NC}"
+                echo ""
+                read -p "  是否现在安装 Homebrew？[Y/n] " install_brew
+
+                if [[ ! "$install_brew" =~ ^[Nn]$ ]]; then
+                    print_info "正在安装 Homebrew..."
+                    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+                        print_ok "Homebrew 安装成功！"
+
+                        # 配置 Homebrew 环境变量
+                        if [[ $(uname -m) == "arm64" ]]; then
+                            eval "$(/opt/homebrew/bin/brew shellenv)"
+                        else
+                            eval "$(/usr/local/bin/brew shellenv)"
+                        fi
+
+                        print_info "正在安装 Node.js..."
+                        if brew install node; then
+                            print_ok "Node.js 安装成功！"
+                            HAS_NODE=true
+                        fi
+                    else
+                        print_warn "Homebrew 安装失败，将使用官方安装脚本"
+                    fi
+                else
+                    print_info "跳过 Homebrew 安装，将使用官方安装脚本"
+                fi
+            fi
+        else
+            print_info "跳过 Node.js 安装，将使用官方安装脚本"
+        fi
+        echo ""
+    fi
+
+    # 使用 npm 安装（推荐方式）
+    if [ "$HAS_NODE" = true ]; then
+        print_info "使用 npm 安装 Claude Code（推荐方式）..."
+        echo ""
+
+        # 配置 npm 使用国内镜像源（淘宝镜像）
+        print_info "正在配置 npm 国内镜像源..."
+        npm config set registry https://registry.npmmirror.com 2>/dev/null
+        print_ok "镜像源配置完成"
+        echo ""
+
+        print_info "正在执行：npm install -g @anthropic-ai/claude-code"
+        print_info "这可能需要 1-3 分钟，请耐心等待..."
+        echo ""
+
+        if npm install -g @anthropic-ai/claude-code; then
+            print_ok "Claude Code 安装成功！"
+            NPM_INSTALL_SUCCESS=true
+        else
+            print_warn "npm 安装失败，尝试恢复默认镜像源..."
+            npm config set registry https://registry.npmjs.org 2>/dev/null
+            print_info "将使用官方安装脚本..."
+        fi
+        echo ""
+    fi
+
+    # 如果 npm 安装失败或没有 Node.js，使用官方安装脚本
+    if [ "$NPM_INSTALL_SUCCESS" != true ]; then
+        print_info "使用官方安装脚本..."
+        print_info "这可能需要 1～3 分钟，请耐心等待..."
         echo ""
         print_line
-    else
         echo ""
-        print_error "安装失败！正在回滚配置..."
 
-        # 回滚配置文件
-        LATEST_BACKUP=$(ls -t "${SHELL_CONFIG}.backup."* 2>/dev/null | head -n1)
-        if [ -n "$LATEST_BACKUP" ]; then
-            cp "$LATEST_BACKUP" "$SHELL_CONFIG"
-            print_ok "配置文件已回滚"
+        if curl -fsSL https://claude.ai/install.sh | bash; then
+            echo ""
+            print_line
+        else
+            echo ""
+            print_error "安装失败！正在回滚配置..."
+
+            # 回滚配置文件
+            LATEST_BACKUP=$(ls -t "${SHELL_CONFIG}.backup."* 2>/dev/null | head -n1)
+            if [ -n "$LATEST_BACKUP" ]; then
+                cp "$LATEST_BACKUP" "$SHELL_CONFIG"
+                print_ok "配置文件已回滚"
+            fi
+
+            # 删除可能创建的 .claude.json
+            [ -f "$HOME/.claude.json" ] && rm "$HOME/.claude.json"
+
+            echo ""
+            print_error "请检查以下事项："
+            echo ""
+            echo -e "  ${YELLOW}1. 确认网络连接正常（可以打开 claude.ai 网站）${NC}"
+            echo -e "  ${YELLOW}2. 如果出现权限错误，请不要使用 sudo${NC}"
+            echo -e "  ${YELLOW}3. 尝试稍后重新运行本脚本${NC}"
+            echo ""
+            echo -e "  如需帮助，请访问：${CYAN}https://code.claude.com/docs/en/troubleshooting${NC}"
+            press_enter
+            exit 1
         fi
-
-        # 删除可能创建的 .claude.json
-        [ -f "$HOME/.claude.json" ] && rm "$HOME/.claude.json"
-
-        echo ""
-        print_error "请检查以下事项："
-        echo ""
-        echo -e "  ${YELLOW}1. 确认网络连接正常（可以打开 claude.ai 网站）${NC}"
-        echo -e "  ${YELLOW}2. 如果出现权限错误，请不要使用 sudo${NC}"
-        echo -e "  ${YELLOW}3. 尝试稍后重新运行本脚本${NC}"
-        echo ""
-        echo -e "  如需帮助，请访问：${CYAN}https://code.claude.com/docs/en/troubleshooting${NC}"
-        press_enter
-        exit 1
     fi
 
     # 刷新 PATH
