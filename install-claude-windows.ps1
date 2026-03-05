@@ -450,14 +450,32 @@ if (-not $script:SkipInstall) {
                     Write-Info "正在安装 Node.js..."
                     Write-Host ""
 
-                    # 检查是否有 winget
-                    $wingetCmd = Get-Command winget -ErrorAction SilentlyContinue
-                    if ($wingetCmd) {
-                        Write-Info "使用 winget 安装 Node.js LTS 版本（约 2-5 分钟）..."
-                        Write-Host ""
-                        $wingetProcess = Start-Process -FilePath "winget" -ArgumentList "install", "--id", "OpenJS.NodeJS.LTS", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements" -NoNewWindow -Wait -PassThru
+                    try {
+                        # 检测系统架构
+                        $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
 
-                        if ($wingetProcess.ExitCode -eq 0) {
+                        # Node.js LTS 下载地址（使用国内镜像加速）
+                        $nodeVersion = "v20.18.1"  # LTS 版本
+                        $nodeUrl = "https://registry.npmmirror.com/-/binary/node/$nodeVersion/node-$nodeVersion-x64.msi"
+                        $nodeMsi = "$env:TEMP\node-installer.msi"
+
+                        Write-Info "正在从国内镜像下载 Node.js（约 30MB，1-2 分钟）..."
+                        Write-Info "下载地址：$nodeUrl"
+                        Write-Host ""
+
+                        # 使用 WebClient 下载
+                        $webClient = New-Object System.Net.WebClient
+                        $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
+                        $webClient.DownloadFile($nodeUrl, $nodeMsi)
+
+                        Write-Ok "下载完成！"
+                        Write-Info "正在静默安装 Node.js（约 30 秒）..."
+                        Write-Host ""
+
+                        # 静默安装 Node.js
+                        $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeMsi, "/qn", "/norestart" -Wait -PassThru
+
+                        if ($msiProcess.ExitCode -eq 0) {
                             Write-Ok "Node.js 安装成功！"
 
                             # 刷新 PATH
@@ -475,80 +493,29 @@ if (-not $script:SkipInstall) {
                                 Write-Info "继续使用传统下载方式..."
                             }
                         } else {
-                            Write-Warn "Node.js 安装失败，继续使用传统下载方式..."
+                            throw "安装失败，退出码：$($msiProcess.ExitCode)"
                         }
-                    } else {
-                        # 没有 winget，直接下载安装包
-                        Write-Info "未检测到 winget，使用直接下载方式..."
+
+                        # 清理安装包
+                        Remove-Item $nodeMsi -Force -ErrorAction SilentlyContinue
+
+                    } catch {
+                        Write-Warn "自动下载安装失败（$($_.Exception.Message)）"
+                        Write-Host ""
+                        Write-Host "  请手动安装 Node.js：" -ForegroundColor Yellow
+                        Write-Host "  1. 访问：https://nodejs.org/zh-cn/" -ForegroundColor Cyan
+                        Write-Host "  2. 下载并安装 LTS 版本" -ForegroundColor Cyan
+                        Write-Host "  3. 安装完成后重新运行本脚本" -ForegroundColor Cyan
                         Write-Host ""
 
-                        try {
-                            # 检测系统架构
-                            $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
-
-                            # Node.js LTS 下载地址（使用国内镜像加速）
-                            $nodeVersion = "v20.18.1"  # LTS 版本
-                            $nodeUrl = "https://registry.npmmirror.com/-/binary/node/$nodeVersion/node-$nodeVersion-x64.msi"
-                            $nodeMsi = "$env:TEMP\node-installer.msi"
-
-                            Write-Info "正在从国内镜像下载 Node.js（约 30MB）..."
-                            Write-Info "下载地址：$nodeUrl"
+                        $openBrowser = Read-Host "  是否现在打开 Node.js 下载页面？[Y/n]"
+                        if ($openBrowser -notmatch "^[Nn]$") {
+                            Start-Process "https://nodejs.org/zh-cn/"
                             Write-Host ""
-
-                            # 使用 WebClient 下载
-                            $webClient = New-Object System.Net.WebClient
-                            $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
-                            $webClient.DownloadFile($nodeUrl, $nodeMsi)
-
-                            Write-Ok "下载完成！"
-                            Write-Info "正在安装 Node.js（会弹出安装窗口，请点击"下一步"完成安装）..."
+                            Write-Info "请在安装 Node.js 后重新运行本脚本以获得最佳体验"
+                            Write-Info "现在将继续使用传统下载方式..."
                             Write-Host ""
-
-                            # 静默安装 Node.js
-                            $msiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeMsi, "/qn", "/norestart" -Wait -PassThru
-
-                            if ($msiProcess.ExitCode -eq 0) {
-                                Write-Ok "Node.js 安装成功！"
-
-                                # 刷新 PATH
-                                $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
-                                            [System.Environment]::GetEnvironmentVariable("Path", "User")
-
-                                # 重新检测
-                                $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-                                $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
-
-                                if ($nodeCmd -and $npmCmd) {
-                                    Write-Ok "Node.js 和 npm 已就绪！"
-                                } else {
-                                    Write-Warn "Node.js 安装完成，但可能需要重启 PowerShell 才能生效"
-                                    Write-Info "继续使用传统下载方式..."
-                                }
-                            } else {
-                                throw "安装失败，退出码：$($msiProcess.ExitCode)"
-                            }
-
-                            # 清理安装包
-                            Remove-Item $nodeMsi -Force -ErrorAction SilentlyContinue
-
-                        } catch {
-                            Write-Warn "自动下载安装失败（$($_.Exception.Message)）"
-                            Write-Host ""
-                            Write-Host "  请手动安装 Node.js：" -ForegroundColor Yellow
-                            Write-Host "  1. 访问：https://nodejs.org/zh-cn/" -ForegroundColor Cyan
-                            Write-Host "  2. 下载并安装 LTS 版本" -ForegroundColor Cyan
-                            Write-Host "  3. 安装完成后重新运行本脚本" -ForegroundColor Cyan
-                            Write-Host ""
-
-                            $openBrowser = Read-Host "  是否现在打开 Node.js 下载页面？[Y/n]"
-                            if ($openBrowser -notmatch "^[Nn]$") {
-                                Start-Process "https://nodejs.org/zh-cn/"
-                                Write-Host ""
-                                Write-Info "请在安装 Node.js 后重新运行本脚本以获得最佳体验"
-                                Write-Info "现在将继续使用传统下载方式..."
-                                Write-Host ""
-                                Start-Sleep -Seconds 3
-                            }
+                            Start-Sleep -Seconds 3
                         }
                     }
                 } else {
