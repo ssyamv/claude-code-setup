@@ -463,10 +463,29 @@ if (-not $script:SkipInstall) {
                         Write-Info "下载地址：$nodeUrl"
                         Write-Host ""
 
-                        # 使用 WebClient 下载
+                        # 使用 WebClient 下载并显示进度
                         $webClient = New-Object System.Net.WebClient
                         $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
-                        $webClient.DownloadFile($nodeUrl, $nodeMsi)
+
+                        # 注册下载进度事件
+                        Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -SourceIdentifier WebClient.DownloadProgressChanged -Action {
+                            $percent = $EventArgs.ProgressPercentage
+                            $received = [Math]::Round($EventArgs.BytesReceived / 1MB, 2)
+                            $total = [Math]::Round($EventArgs.TotalBytesToReceive / 1MB, 2)
+                            Write-Progress -Activity "下载 Node.js" -Status "$received MB / $total MB" -PercentComplete $percent
+                        } | Out-Null
+
+                        try {
+                            $webClient.DownloadFileAsync((New-Object System.Uri($nodeUrl)), $nodeMsi)
+                            while ($webClient.IsBusy) {
+                                Start-Sleep -Milliseconds 100
+                            }
+                            Write-Progress -Activity "下载 Node.js" -Completed
+                        } finally {
+                            Unregister-Event -SourceIdentifier WebClient.DownloadProgressChanged -ErrorAction SilentlyContinue
+                            Remove-Job -Name WebClient.DownloadProgressChanged -ErrorAction SilentlyContinue
+                            $webClient.Dispose()
+                        }
 
                         Write-Ok "下载完成！"
                         Write-Info "正在安装 Node.js（需要管理员权限，约 30 秒）..."
@@ -645,10 +664,29 @@ https.get(url, {
                     Write-Ok "下载完成！"
                 } else {
                     Write-Info "正在下载 Claude Code（约 50-100MB，请耐心等待）..."
-                    # 使用 WebClient 以支持更好的错误处理
+                    # 使用 WebClient 以支持更好的错误处理和进度显示
                     $webClient = New-Object System.Net.WebClient
                     $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                    $webClient.DownloadFile($zipUrl, $zipPath)
+
+                    # 注册下载进度事件
+                    Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -SourceIdentifier WebClient.ClaudeDownload -Action {
+                        $percent = $EventArgs.ProgressPercentage
+                        $received = [Math]::Round($EventArgs.BytesReceived / 1MB, 2)
+                        $total = [Math]::Round($EventArgs.TotalBytesToReceive / 1MB, 2)
+                        Write-Progress -Activity "下载 Claude Code" -Status "$received MB / $total MB" -PercentComplete $percent
+                    } | Out-Null
+
+                    try {
+                        $webClient.DownloadFileAsync((New-Object System.Uri($zipUrl)), $zipPath)
+                        while ($webClient.IsBusy) {
+                            Start-Sleep -Milliseconds 100
+                        }
+                        Write-Progress -Activity "下载 Claude Code" -Completed
+                    } finally {
+                        Unregister-Event -SourceIdentifier WebClient.ClaudeDownload -ErrorAction SilentlyContinue
+                        Remove-Job -Name WebClient.ClaudeDownload -ErrorAction SilentlyContinue
+                        $webClient.Dispose()
+                    }
                     Write-Ok "下载完成！"
                 }
 
@@ -746,10 +784,29 @@ https.get(url, {
                         }
                     } else {
                         # 使用 PowerShell 下载
-                        Write-Info "正在下载（约 50-100MB，请耐心等待）..."
+                        Write-Info "正在���载（约 50-100MB，请耐心等待）..."
                         $webClient = New-Object System.Net.WebClient
                         $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                        $webClient.DownloadFile($claudeUrl, $claudePath)
+
+                        # 注册下载进度事件
+                        Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -SourceIdentifier WebClient.GitHubDownload -Action {
+                            $percent = $EventArgs.ProgressPercentage
+                            $received = [Math]::Round($EventArgs.BytesReceived / 1MB, 2)
+                            $total = [Math]::Round($EventArgs.TotalBytesToReceive / 1MB, 2)
+                            Write-Progress -Activity "从 GitHub 下载 Claude Code" -Status "$received MB / $total MB" -PercentComplete $percent
+                        } | Out-Null
+
+                        try {
+                            $webClient.DownloadFileAsync((New-Object System.Uri($claudeUrl)), $claudePath)
+                            while ($webClient.IsBusy) {
+                                Start-Sleep -Milliseconds 100
+                            }
+                            Write-Progress -Activity "从 GitHub 下载 Claude Code" -Completed
+                        } finally {
+                            Unregister-Event -SourceIdentifier WebClient.GitHubDownload -ErrorAction SilentlyContinue
+                            Remove-Job -Name WebClient.GitHubDownload -ErrorAction SilentlyContinue
+                            $webClient.Dispose()
+                        }
                         Write-Ok "从 GitHub 下载完成！"
                     }
                 } catch {
