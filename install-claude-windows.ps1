@@ -743,15 +743,13 @@ https.get(url, {
                 }
             }
 
-                # 添加到 PATH（仅在手动下载时需要，npm 会自动处理）
-                if (-not $script:NpmInstallSuccess) {
-                    $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-                    if ($userPath -notlike "*$installDir*") {
-                        [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
-                        Write-Ok "已添加到系统 PATH"
-                    }
-                }
+            # 添加到 PATH（仅在手动下载时需要，npm 会自动处理）
+            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+            if ($userPath -notlike "*$installDir*") {
+                [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
+                Write-Ok "已添加到系统 PATH"
             }
+        }
         } elseif ($installScript -and -not [string]::IsNullOrWhiteSpace($installScript)) {
             Write-Info "正在执行官方安装脚本..."
             & ([scriptblock]::Create($installScript))
