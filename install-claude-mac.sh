@@ -43,7 +43,7 @@ print_info() {
 
 press_enter() {
     echo ""
-    read -p "  👉 按回车键继续..." _dummy
+    read -p "  👉 按回车键继续..." _dummy </dev/tty
     echo ""
 }
 
@@ -95,7 +95,7 @@ if command -v claude &>/dev/null; then
     echo ""
     echo -e "  ${YELLOW}您已经安装了 Claude Code，是否要重新安装/更新？${NC}"
     echo ""
-    read -p "  重新安装/更新？[y/N] " choice
+    read -p "  重新安装/更新？[y/N] " choice </dev/tty
     if [[ ! "$choice" =~ ^[Yy]$ ]]; then
         echo ""
         print_ok "跳过安装，直接进入使用指引..."
@@ -124,7 +124,7 @@ echo -e "  ${YELLOW}[4]${NC}     跳过，稍后手动配置"
 echo ""
 
 while true; do
-    read -p "  请输入选项 [1/2/3/4]（默认 1）: " method_choice
+    read -p "  请输入选项 [1/2/3/4]（默认 1）: " method_choice </dev/tty
     method_choice="${method_choice:-1}"
     if [[ "$method_choice" =~ ^[1-4]$ ]]; then break; fi
     print_warn "请输入 1、2、3 或 4"
@@ -147,7 +147,7 @@ if [[ "$method_choice" == "1" ]]; then
 
     # 输入 Base URL
     while true; do
-        read -p "  请粘贴 API 地址（Base URL）: " base_url
+        read -p "  请粘贴 API 地址（Base URL）: " base_url </dev/tty
         base_url="${base_url%/}"  # 去掉末尾斜杠
         # 去除可能的空格和引号
         base_url="$(echo "$base_url" | xargs | sed 's/^[\"'\'']*//;s/[\"'\'']*$//')"
@@ -164,7 +164,7 @@ if [[ "$method_choice" == "1" ]]; then
 
     # 输入 API Key
     while true; do
-        read -p "  请粘贴 API Key: " api_key
+        read -p "  请粘贴 API Key: " api_key </dev/tty
         if [[ ${#api_key} -gt 8 ]]; then
             print_ok "API Key 已输入"
             break
@@ -224,7 +224,7 @@ elif [[ "$method_choice" == "2" ]]; then
     echo -e "  ${YELLOW}如果还没有付费账号，请先在浏览器中注册：${NC}"
     echo -e "  ${CYAN}  https://claude.ai/upgrade${NC}"
     echo ""
-    read -p "  已有付费账号，按回车继续..." _dummy
+    read -p "  已有付费账号，按回车继续..." _dummy </dev/tty
     USE_OFFICIAL=true
 
 # ---- 方式 3：大厂云平台 ----
@@ -238,13 +238,13 @@ elif [[ "$method_choice" == "3" ]]; then
     echo -e "  ${CYAN}[1]${NC} Amazon Bedrock"
     echo -e "  ${CYAN}[2]${NC} Google Vertex AI"
     echo ""
-    read -p "  选择 [1/2]: " cloud_choice
+    read -p "  选择 [1/2]: " cloud_choice </dev/tty
 
     if [[ "$cloud_choice" == "1" ]]; then
-        read -p "  AWS_REGION（默认 us-east-1）: " aws_region
+        read -p "  AWS_REGION（默认 us-east-1）: " aws_region </dev/tty
         aws_region="${aws_region:-us-east-1}"
-        read -p "  AWS_ACCESS_KEY_ID: " aws_key
-        read -p "  AWS_SECRET_ACCESS_KEY: " aws_secret
+        read -p "  AWS_ACCESS_KEY_ID: " aws_key </dev/tty
+        read -p "  AWS_SECRET_ACCESS_KEY: " aws_secret </dev/tty
 
         # 备份配置文件
         cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
@@ -270,9 +270,9 @@ elif [[ "$method_choice" == "3" ]]; then
         export AWS_SECRET_ACCESS_KEY="$aws_secret"
 
     elif [[ "$cloud_choice" == "2" ]]; then
-        read -p "  CLOUD_ML_REGION（默认 us-east5）: " gcp_region
+        read -p "  CLOUD_ML_REGION（默认 us-east5）: " gcp_region </dev/tty
         gcp_region="${gcp_region:-us-east5}"
-        read -p "  ANTHROPIC_VERTEX_PROJECT_ID: " gcp_project
+        read -p "  ANTHROPIC_VERTEX_PROJECT_ID: " gcp_project </dev/tty
 
         # 备份配置文件
         cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
@@ -327,7 +327,7 @@ if [ "$SKIP_INSTALL" != true ]; then
         echo -e "  ${CYAN}• 选择 Y：${NC}自动安装 Node.js，然后用 npm 安装 Claude Code（推荐）"
         echo -e "  ${CYAN}• 选择 N：${NC}跳过，使用官方安装脚本（较慢，可能不稳定）"
         echo ""
-        read -p "  是否安装 Node.js？[Y/n] " install_node
+        read -p "  是否安装 Node.js？[Y/n] " install_node </dev/tty
 
         if [[ ! "$install_node" =~ ^[Nn]$ ]]; then
             print_info "正在安装 Node.js..."
@@ -350,7 +350,7 @@ if [ "$SKIP_INSTALL" != true ]; then
                 echo -e "  ${BOLD}安装 Homebrew 的命令：${NC}"
                 echo -e "  ${CYAN}/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"${NC}"
                 echo ""
-                read -p "  是否现在安装 Homebrew？[Y/n] " install_brew
+                read -p "  是否现在安装 Homebrew？[Y/n] " install_brew </dev/tty
 
                 if [[ ! "$install_brew" =~ ^[Nn]$ ]]; then
                     print_info "正在安装 Homebrew..."
@@ -510,7 +510,7 @@ if [ "$NEED_RESTART" = true ]; then
     echo -e "  ${CYAN}2.${NC} 重新打开终端（Launchpad 搜索"终端"）"
     echo -e "  ${CYAN}3.${NC} 输入 ${BOLD}claude${NC} 开始使用"
 else
-    read -p "  是否现在立即测试启动？[Y/n] " start_now
+    read -p "  是否现在立即测试启动？[Y/n] " start_now </dev/tty
     if [[ ! "$start_now" =~ ^[Nn]$ ]]; then
         echo ""
         print_info "正在启动 Claude Code..."
