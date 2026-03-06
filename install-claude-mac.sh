@@ -130,9 +130,6 @@ while true; do
     print_warn "请输入 1、2、3 或 4"
 done
 
-SHELL_CONFIG="$HOME/.zshrc"
-[[ "$SHELL" == *"bash"* ]] && SHELL_CONFIG="$HOME/.bash_profile"
-
 # ---- 方式 1：中转 API（推荐）----
 if [[ "$method_choice" == "1" ]]; then
     clear
@@ -174,30 +171,7 @@ if [[ "$method_choice" == "1" ]]; then
     done
 
     echo ""
-    print_info "正在将配置写入 $SHELL_CONFIG ..."
-
-    # 备份配置文件
-    cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
-
-    # 清理旧配置（更精确的匹配，只删除 export 开头的配置行）
-    sed -i '' '/^export ANTHROPIC_BASE_URL=/d' "$SHELL_CONFIG" 2>/dev/null
-    sed -i '' '/^export ANTHROPIC_API_KEY=/d' "$SHELL_CONFIG" 2>/dev/null
-    # 清理配置注释行
-    sed -i '' '/^# Claude Code 中转 API 配置$/d' "$SHELL_CONFIG" 2>/dev/null
-
-    # 写入新配置
-    {
-        echo ""
-        echo "# Claude Code 中转 API 配置"
-        echo "export ANTHROPIC_BASE_URL=\"$base_url\""
-        echo "export ANTHROPIC_API_KEY=\"$api_key\""
-    } >> "$SHELL_CONFIG"
-
-    # 当前会话也生效
-    export ANTHROPIC_BASE_URL="$base_url"
-    export ANTHROPIC_API_KEY="$api_key"
-
-    print_ok "配置已保存！每次打开终端自动生效。"
+    print_info "正在配置 Claude Code..."
 
     # ---- 写入 ~/.claude.json 以绕过 Claude Code 2.0 强制登录 ----
     print_info "正在写入 ~/.claude.json 以跳过登录验证..."
@@ -208,6 +182,33 @@ if [[ "$method_choice" == "1" ]]; then
 }
 EOF
     print_ok "已自动绕过 Claude Code 2.0 强制登录，无需浏览器授权！"
+
+    # ---- 配置 ~/.claude/settings.json（统一配置文件）----
+    print_info "正在配置 ~/.claude/settings.json..."
+    mkdir -p "$HOME/.claude"
+
+    # 检查是否已存在 settings.json
+    if [ -f "$HOME/.claude/settings.json" ]; then
+        # 备份现有配置
+        cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.backup.$(date +%Y%m%d_%H%M%S)"
+        print_info "已备份现有配置文件"
+    fi
+
+    # 写入新配置（包含 API key 和 Base URL）
+    cat > "$HOME/.claude/settings.json" << EOF
+{
+  "env": {
+    "ANTHROPIC_API_KEY": "$api_key",
+    "ANTHROPIC_BASE_URL": "$base_url",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "model": "sonnet"
+}
+EOF
+    print_ok "配置已保存到 ~/.claude/settings.json！"
 
     USE_RELAY=true
 
@@ -240,61 +241,59 @@ elif [[ "$method_choice" == "3" ]]; then
     echo ""
     read -p "  选择 [1/2]: " cloud_choice </dev/tty
 
+    mkdir -p "$HOME/.claude"
+
+    # 检查是否已存在 settings.json
+    if [ -f "$HOME/.claude/settings.json" ]; then
+        cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.backup.$(date +%Y%m%d_%H%M%S)"
+        print_info "已备份现有配置文件"
+    fi
+
     if [[ "$cloud_choice" == "1" ]]; then
         read -p "  AWS_REGION（默认 us-east-1）: " aws_region </dev/tty
         aws_region="${aws_region:-us-east-1}"
         read -p "  AWS_ACCESS_KEY_ID: " aws_key </dev/tty
         read -p "  AWS_SECRET_ACCESS_KEY: " aws_secret </dev/tty
 
-        # 备份配置文件
-        cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
-
-        sed -i '' '/^export CLAUDE_CODE_USE_BEDROCK=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^export AWS_REGION=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^export AWS_ACCESS_KEY_ID=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^export AWS_SECRET_ACCESS_KEY=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^# Claude Code Amazon Bedrock 配置$/d' "$SHELL_CONFIG" 2>/dev/null
-
-        {
-            echo ""
-            echo "# Claude Code Amazon Bedrock 配置"
-            echo "export CLAUDE_CODE_USE_BEDROCK=1"
-            echo "export AWS_REGION=\"$aws_region\""
-            echo "export AWS_ACCESS_KEY_ID=\"$aws_key\""
-            echo "export AWS_SECRET_ACCESS_KEY=\"$aws_secret\""
-        } >> "$SHELL_CONFIG"
-
-        export CLAUDE_CODE_USE_BEDROCK=1
-        export AWS_REGION="$aws_region"
-        export AWS_ACCESS_KEY_ID="$aws_key"
-        export AWS_SECRET_ACCESS_KEY="$aws_secret"
+        # 写入 settings.json
+        cat > "$HOME/.claude/settings.json" << EOF
+{
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "AWS_REGION": "$aws_region",
+    "AWS_ACCESS_KEY_ID": "$aws_key",
+    "AWS_SECRET_ACCESS_KEY": "$aws_secret",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "model": "sonnet"
+}
+EOF
 
     elif [[ "$cloud_choice" == "2" ]]; then
         read -p "  CLOUD_ML_REGION（默认 us-east5）: " gcp_region </dev/tty
         gcp_region="${gcp_region:-us-east5}"
         read -p "  ANTHROPIC_VERTEX_PROJECT_ID: " gcp_project </dev/tty
 
-        # 备份配置文件
-        cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
-
-        sed -i '' '/^export CLAUDE_CODE_USE_VERTEX=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^export CLOUD_ML_REGION=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^export ANTHROPIC_VERTEX_PROJECT_ID=/d' "$SHELL_CONFIG" 2>/dev/null
-        sed -i '' '/^# Claude Code Google Vertex AI 配置$/d' "$SHELL_CONFIG" 2>/dev/null
-
-        {
-            echo ""
-            echo "# Claude Code Google Vertex AI 配置"
-            echo "export CLAUDE_CODE_USE_VERTEX=1"
-            echo "export CLOUD_ML_REGION=\"$gcp_region\""
-            echo "export ANTHROPIC_VERTEX_PROJECT_ID=\"$gcp_project\""
-        } >> "$SHELL_CONFIG"
-
-        export CLAUDE_CODE_USE_VERTEX=1
-        export CLOUD_ML_REGION="$gcp_region"
-        export ANTHROPIC_VERTEX_PROJECT_ID="$gcp_project"
+        # 写入 settings.json
+        cat > "$HOME/.claude/settings.json" << EOF
+{
+  "env": {
+    "CLAUDE_CODE_USE_VERTEX": "1",
+    "CLOUD_ML_REGION": "$gcp_region",
+    "ANTHROPIC_VERTEX_PROJECT_ID": "$gcp_project",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "model": "sonnet"
+}
+EOF
     fi
-    print_ok "云平台配置已保存！"
+    print_ok "云平台配置已保存到 ~/.claude/settings.json！"
 
 # ---- 方式 4：跳过 ----
 else
@@ -457,15 +456,9 @@ if [ "$SKIP_INSTALL" != true ]; then
         echo -e "  ${YELLOW}3. 如果仍然失败，尝试恢复默认镜像源：${NC}npm config set registry https://registry.npmjs.org"
         echo ""
 
-        # 回滚配置文件
-        LATEST_BACKUP=$(ls -t "${SHELL_CONFIG}.backup."* 2>/dev/null | head -n1)
-        if [ -n "$LATEST_BACKUP" ]; then
-            cp "$LATEST_BACKUP" "$SHELL_CONFIG"
-            print_ok "配置文件已回滚"
-        fi
-
-        # 删除可能创建的 .claude.json
+        # 删除可能创建的配置文件
         [ -f "$HOME/.claude.json" ] && rm "$HOME/.claude.json"
+        [ -f "$HOME/.claude/settings.json" ] && rm "$HOME/.claude/settings.json"
 
         exit 1
     fi

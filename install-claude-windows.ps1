@@ -205,18 +205,7 @@ if ($methodChoice -eq "1") {
     Write-Ok "API Key 已输入"
 
     Write-Host ""
-    Write-Info "正在写入系统环境变量（用户级，重启后永久生效）..."
-
-    # 备份旧配置（如果存在）
-    $script:OldBaseUrl = [System.Environment]::GetEnvironmentVariable("ANTHROPIC_BASE_URL", "User")
-    $script:OldApiKey = [System.Environment]::GetEnvironmentVariable("ANTHROPIC_API_KEY", "User")
-
-    [System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", $baseUrl, "User")
-    [System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", $apiKey, "User")
-    # 当前会话也生效
-    $env:ANTHROPIC_BASE_URL = $baseUrl
-    $env:ANTHROPIC_API_KEY  = $apiKey
-    Write-Ok "配置已保存！"
+    Write-Info "正在配置 Claude Code..."
 
     # ---- 写入 .claude.json 以绕过 Claude Code 2.0 强制登录 ----
     Write-Info "正在写入 .claude.json 以跳过登录验证..."
@@ -229,6 +218,39 @@ if ($methodChoice -eq "1") {
 "@
     $claudeJsonContent | Set-Content -Path $claudeJsonPath -Encoding UTF8
     Write-Ok "已自动绕过 Claude Code 2.0 强制登录，无需浏览器授权！"
+
+    # ---- 配置 .claude/settings.json（统一配置文件）----
+    Write-Info "正在配置 .claude\settings.json..."
+    $claudeDir = "$env:USERPROFILE\.claude"
+    if (-not (Test-Path $claudeDir)) {
+        New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
+    }
+
+    $settingsPath = "$claudeDir\settings.json"
+    # 检查是否已存在 settings.json
+    if (Test-Path $settingsPath) {
+        # 备份现有配置
+        $backupPath = "$settingsPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+        Copy-Item -Path $settingsPath -Destination $backupPath -Force
+        Write-Info "已备份现有配置文件"
+    }
+
+    # 写入新配置（包含 API key 和 Base URL）
+    $settingsContent = @"
+{
+  "env": {
+    "ANTHROPIC_API_KEY": "$apiKey",
+    "ANTHROPIC_BASE_URL": "$baseUrl",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "model": "sonnet"
+}
+"@
+    $settingsContent | Set-Content -Path $settingsPath -Encoding UTF8
+    Write-Ok "配置已保存到 .claude\settings.json！"
 
     $script:UseRelay = $true
 
@@ -260,47 +282,69 @@ if ($methodChoice -eq "1") {
     Write-Host ""
     $cloudChoice = Read-Host "  选择 [1/2]"
 
+    $claudeDir = "$env:USERPROFILE\.claude"
+    if (-not (Test-Path $claudeDir)) {
+        New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
+    }
+
+    $settingsPath = "$claudeDir\settings.json"
+    # 检查是否已存在 settings.json
+    if (Test-Path $settingsPath) {
+        $backupPath = "$settingsPath.backup.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+        Copy-Item -Path $settingsPath -Destination $backupPath -Force
+        Write-Info "已备份现有配置文件"
+    }
+
     if ($cloudChoice -eq "1") {
         $awsRegion = Read-Host "  AWS_REGION（直接回车默认 us-east-1）"
         if ([string]::IsNullOrWhiteSpace($awsRegion)) { $awsRegion = "us-east-1" }
         $awsKey    = Read-Host "  AWS_ACCESS_KEY_ID"
         $awsSecret = Read-Host "  AWS_SECRET_ACCESS_KEY"
 
-        # 备份旧配置
-        $script:OldBedrockConfig = @{
-            UseBedrock = [System.Environment]::GetEnvironmentVariable("CLAUDE_CODE_USE_BEDROCK","User")
-            Region = [System.Environment]::GetEnvironmentVariable("AWS_REGION","User")
-            KeyId = [System.Environment]::GetEnvironmentVariable("AWS_ACCESS_KEY_ID","User")
-            Secret = [System.Environment]::GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY","User")
-        }
+        # 写入 settings.json
+        $settingsContent = @"
+{
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "AWS_REGION": "$awsRegion",
+    "AWS_ACCESS_KEY_ID": "$awsKey",
+    "AWS_SECRET_ACCESS_KEY": "$awsSecret",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "model": "sonnet"
+}
+"@
+        $settingsContent | Set-Content -Path $settingsPath -Encoding UTF8
 
-        [System.Environment]::SetEnvironmentVariable("CLAUDE_CODE_USE_BEDROCK","1","User")
-        [System.Environment]::SetEnvironmentVariable("AWS_REGION",$awsRegion,"User")
-        [System.Environment]::SetEnvironmentVariable("AWS_ACCESS_KEY_ID",$awsKey,"User")
-        [System.Environment]::SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY",$awsSecret,"User")
-        $env:CLAUDE_CODE_USE_BEDROCK = "1"
-        $env:AWS_REGION = $awsRegion
     } elseif ($cloudChoice -eq "2") {
         $gcpRegion  = Read-Host "  CLOUD_ML_REGION（直接回车默认 us-east5）"
         if ([string]::IsNullOrWhiteSpace($gcpRegion)) { $gcpRegion = "us-east5" }
         $gcpProject = Read-Host "  ANTHROPIC_VERTEX_PROJECT_ID"
 
-        # 备份旧配置
-        $script:OldVertexConfig = @{
-            UseVertex = [System.Environment]::GetEnvironmentVariable("CLAUDE_CODE_USE_VERTEX","User")
-            Region = [System.Environment]::GetEnvironmentVariable("CLOUD_ML_REGION","User")
-            ProjectId = [System.Environment]::GetEnvironmentVariable("ANTHROPIC_VERTEX_PROJECT_ID","User")
-        }
-
-        [System.Environment]::SetEnvironmentVariable("CLAUDE_CODE_USE_VERTEX","1","User")
-        [System.Environment]::SetEnvironmentVariable("CLOUD_ML_REGION",$gcpRegion,"User")
-        [System.Environment]::SetEnvironmentVariable("ANTHROPIC_VERTEX_PROJECT_ID",$gcpProject,"User")
-        $env:CLAUDE_CODE_USE_VERTEX = "1"
+        # 写入 settings.json
+        $settingsContent = @"
+{
+  "env": {
+    "CLAUDE_CODE_USE_VERTEX": "1",
+    "CLOUD_ML_REGION": "$gcpRegion",
+    "ANTHROPIC_VERTEX_PROJECT_ID": "$gcpProject",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_TELEMETRY": "1"
+  },
+  "model": "sonnet"
+}
+"@
+        $settingsContent | Set-Content -Path $settingsPath -Encoding UTF8
     }
-    Write-Ok "云平台配置已保存！"
+    Write-Ok "云平台配置已保存到 .claude\settings.json！"
 
 } else {
-    Write-Info "跳过 API 配置，您可以在安装完成后手动设置环境变量。"
+    Write-Info "跳过 API 配置，您可以在安装完成后手动编辑 .claude\settings.json 文件。"
 }
 
 # ---- 步骤 3：安装 Git for Windows（必需前提） ----
@@ -822,13 +866,6 @@ https.get(url, {
                     throw "自动下载失败，请参考上述手动安装方法"
                 }
             }
-
-            # 添加到 PATH（仅在手动下载时需要，npm 会自动处理）
-            $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-            if ($userPath -notlike "*$installDir*") {
-                [System.Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
-                Write-Ok "已添加到系统 PATH"
-            }
         }
 
         Write-Host ""
@@ -841,36 +878,15 @@ https.get(url, {
         # 回滚配置
         Write-Info "正在回滚配置..."
 
-        if ($script:OldBaseUrl -or $script:OldApiKey) {
-            if ($script:OldBaseUrl) {
-                [System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", $script:OldBaseUrl, "User")
-            } else {
-                [System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", $null, "User")
-            }
-            if ($script:OldApiKey) {
-                [System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", $script:OldApiKey, "User")
-            } else {
-                [System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", $null, "User")
-            }
-        }
-
-        if ($script:OldBedrockConfig) {
-            [System.Environment]::SetEnvironmentVariable("CLAUDE_CODE_USE_BEDROCK", $script:OldBedrockConfig.UseBedrock, "User")
-            [System.Environment]::SetEnvironmentVariable("AWS_REGION", $script:OldBedrockConfig.Region, "User")
-            [System.Environment]::SetEnvironmentVariable("AWS_ACCESS_KEY_ID", $script:OldBedrockConfig.KeyId, "User")
-            [System.Environment]::SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", $script:OldBedrockConfig.Secret, "User")
-        }
-
-        if ($script:OldVertexConfig) {
-            [System.Environment]::SetEnvironmentVariable("CLAUDE_CODE_USE_VERTEX", $script:OldVertexConfig.UseVertex, "User")
-            [System.Environment]::SetEnvironmentVariable("CLOUD_ML_REGION", $script:OldVertexConfig.Region, "User")
-            [System.Environment]::SetEnvironmentVariable("ANTHROPIC_VERTEX_PROJECT_ID", $script:OldVertexConfig.ProjectId, "User")
-        }
-
-        # 删除可能创建的 .claude.json
+        # 删除可能创建的配置文件
         $claudeJsonPath = "$env:USERPROFILE\.claude.json"
         if (Test-Path $claudeJsonPath) {
             Remove-Item $claudeJsonPath -Force
+        }
+
+        $settingsPath = "$env:USERPROFILE\.claude\settings.json"
+        if (Test-Path $settingsPath) {
+            Remove-Item $settingsPath -Force
         }
 
         Write-Ok "配置已回滚"
