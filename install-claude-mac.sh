@@ -337,85 +337,35 @@ if [ "$SKIP_INSTALL" != true ]; then
             exit 1
         fi
 
-        print_info "正在安装 Node.js..."
+        print_info "正在安装 Node.js（无需管理员权限）..."
         echo ""
 
-        # 检查是否安装了 Homebrew
-        if command -v brew &>/dev/null; then
-            print_info "使用 Homebrew 安装 Node.js..."
-            if brew install node; then
+        # 使用 nvm 安装 Node.js（无需管理员权限）
+        print_info "使用 nvm 安装 Node.js..."
+
+        if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash; then
+            print_ok "nvm 安装成功！"
+            echo ""
+
+            # 加载 nvm
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            print_info "正在安装 Node.js LTS 版本..."
+            if nvm install --lts && nvm use --lts; then
                 print_ok "Node.js 安装成功！"
+                NODE_VER=$(node --version 2>/dev/null)
+                print_ok "当前版本：$NODE_VER"
                 HAS_NODE=true
             else
                 print_error "Node.js 安装失败"
-                echo ""
-                echo -e "  ${YELLOW}请尝试手动安装：${NC}"
-                echo -e "  ${CYAN}brew install node${NC}"
-                echo ""
                 exit 1
             fi
         else
-            print_warn "未检测到 Homebrew"
+            print_error "nvm 安装失败"
             echo ""
-            echo -e "  ${YELLOW}需要先安装 Homebrew（Mac 包管理器）${NC}"
-            echo ""
-            read -p "  是否现在安装 Homebrew？[Y/n] " install_brew </dev/tty
-
-            if [[ "$install_brew" =~ ^[Nn]$ ]]; then
-                print_error "没有 Homebrew 无法自动安装 Node.js"
-                echo ""
-                echo -e "  ${YELLOW}请先手动安装 Homebrew 和 Node.js，然后重新运行此脚本${NC}"
-                echo -e "  ${CYAN}1. 安��� Homebrew：${NC}/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-                echo -e "  ${CYAN}2. 安装 Node.js：${NC}brew install node"
-                echo ""
-                exit 1
-            fi
-
-            print_info "正在安装 Homebrew..."
-            if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
-                print_ok "Homebrew 安装成功！"
-
-                # 配置 Homebrew 环境变量（根据芯片架构）
-                if [[ $(uname -m) == "arm64" ]]; then
-                    BREW_PATH="/opt/homebrew/bin/brew"
-                else
-                    BREW_PATH="/usr/local/bin/brew"
-                fi
-
-                # 确保 brew 命令可用
-                if [ -f "$BREW_PATH" ]; then
-                    eval "$($BREW_PATH shellenv)"
-                    export PATH="$(dirname $BREW_PATH):$PATH"
-                    print_ok "Homebrew 环境变量配置完成"
-                else
-                    print_error "找不到 brew 命令"
-                    echo ""
-                    echo -e "  ${YELLOW}请尝试手动安装：${NC}"
-                    echo -e "  ${CYAN}1. 关闭并重新打开终端${NC}"
-                    echo -e "  ${CYAN}2. 运行：brew install node${NC}"
-                    echo ""
-                    exit 1
-                fi
-
-                print_info "正在安装 Node.js..."
-                if $BREW_PATH install node; then
-                    print_ok "Node.js 安装成功！"
-                    HAS_NODE=true
-                else
-                    print_error "Node.js 安装失败"
-                    echo ""
-                    echo -e "  ${YELLOW}请尝试手动安装：${NC}"
-                    echo -e "  ${CYAN}brew install node${NC}"
-                    echo ""
-                    exit 1
-                fi
-            else
-                print_error "Homebrew 安装失败"
-                echo ""
-                echo -e "  ${YELLOW}请手动安装后重新运行此脚本${NC}"
-                echo ""
-                exit 1
-            fi
+            echo -e "  ${YELLOW}请检查网络连接后重试${NC}"
+            exit 1
         fi
         echo ""
     fi
