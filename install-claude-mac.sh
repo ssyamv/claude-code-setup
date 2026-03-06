@@ -149,11 +149,14 @@ if [[ "$method_choice" == "1" ]]; then
     while true; do
         read -p "  请粘贴 API 地址（Base URL）: " base_url
         base_url="${base_url%/}"  # 去掉末尾斜杠
-        if [[ "$base_url" == http* ]]; then
+        # 去除可能的空格和引号
+        base_url="$(echo "$base_url" | xargs | sed 's/^[\"'\'']*//;s/[\"'\'']*$//')"
+        if [[ "$base_url" =~ ^https?:// ]]; then
             print_ok "地址格式正确"
             break
         else
-            print_warn "地址应以 http:// 或 https:// 开头，请重新输入"
+            print_warn "地址必须以 http:// 或 https:// 开头，请重新输入"
+            print_info "示例：https://api.example.com"
         fi
     done
 
