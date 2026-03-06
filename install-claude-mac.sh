@@ -375,15 +375,30 @@ if [ "$SKIP_INSTALL" != true ]; then
             if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
                 print_ok "Homebrew 安装成功！"
 
-                # 配置 Homebrew 环境变量
+                # 配置 Homebrew 环境变量（根据芯片架构）
                 if [[ $(uname -m) == "arm64" ]]; then
-                    eval "$(/opt/homebrew/bin/brew shellenv)"
+                    BREW_PATH="/opt/homebrew/bin/brew"
                 else
-                    eval "$(/usr/local/bin/brew shellenv)"
+                    BREW_PATH="/usr/local/bin/brew"
+                fi
+
+                # 确保 brew 命令可用
+                if [ -f "$BREW_PATH" ]; then
+                    eval "$($BREW_PATH shellenv)"
+                    export PATH="$(dirname $BREW_PATH):$PATH"
+                    print_ok "Homebrew 环境变量配置完成"
+                else
+                    print_error "找不到 brew 命令"
+                    echo ""
+                    echo -e "  ${YELLOW}请尝试手动安装：${NC}"
+                    echo -e "  ${CYAN}1. 关闭并重新打开终端${NC}"
+                    echo -e "  ${CYAN}2. 运行：brew install node${NC}"
+                    echo ""
+                    exit 1
                 fi
 
                 print_info "正在安装 Node.js..."
-                if brew install node; then
+                if $BREW_PATH install node; then
                     print_ok "Node.js 安装成功！"
                     HAS_NODE=true
                 else
