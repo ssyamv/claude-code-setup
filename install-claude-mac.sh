@@ -341,6 +341,7 @@ if [ "$SKIP_INSTALL" != true ]; then
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             print_info "正在安装 Node.js LTS 版本（v20+）..."
+            export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
             if nvm install --lts && nvm use --lts; then
                 NODE_VER=$(node --version 2>/dev/null)
                 print_ok "Node.js 已升级至 $NODE_VER"
@@ -388,6 +389,7 @@ if [ "$SKIP_INSTALL" != true ]; then
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             print_info "正在安装 Node.js LTS 版本..."
+            export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
             if nvm install --lts && nvm use --lts; then
                 print_ok "Node.js 安装成功！"
                 NODE_VER=$(node --version 2>/dev/null)
