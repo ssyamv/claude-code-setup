@@ -7,6 +7,15 @@
 # curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-setup/main/install-claude-mac.sh | bash
 # =============================================================================
 
+# ---- 检测 Shell 配置文件 ----
+if [[ "$SHELL" == *"zsh"* ]]; then
+    SHELL_CONFIG="$HOME/.zshrc"
+elif [[ "$SHELL" == *"bash"* ]]; then
+    SHELL_CONFIG="$HOME/.bash_profile"
+else
+    SHELL_CONFIG="$HOME/.profile"
+fi
+
 # ---- 颜色定义 ----
 RED='\033[0;31m'
 GREEN='\033[0;32m'
