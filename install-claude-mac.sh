@@ -324,8 +324,35 @@ if [ "$SKIP_INSTALL" != true ]; then
     # 检查是否已安装 Node.js 和 npm
     if command -v node &>/dev/null && command -v npm &>/dev/null; then
         NODE_VER=$(node --version 2>/dev/null)
-        print_ok "检测到 Node.js $NODE_VER"
-        HAS_NODE=true
+        NODE_MAJOR=$(echo "$NODE_VER" | sed 's/v//' | cut -d. -f1)
+        if [ "$NODE_MAJOR" -lt 20 ]; then
+            print_warn "检测到 Node.js $NODE_VER（版本过旧，需要 v20 或更高版本）"
+            echo ""
+            echo -e "  ${YELLOW}Claude Code 最新版本需要 Node.js v20+，当前版本不兼容${NC}"
+            echo -e "  ${YELLOW}将自动使用 nvm 升级 Node.js...${NC}"
+            echo ""
+
+            # 加载已有 nvm 或重新安装
+            export NVM_DIR="$HOME/.nvm"
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+                print_info "正在安装 nvm..."
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+            fi
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            print_info "正在安装 Node.js LTS 版本（v20+）..."
+            if nvm install --lts && nvm use --lts; then
+                NODE_VER=$(node --version 2>/dev/null)
+                print_ok "Node.js 已升级至 $NODE_VER"
+                HAS_NODE=true
+            else
+                print_error "Node.js 升级失败，请手动执行：nvm install --lts"
+                exit 1
+            fi
+        else
+            print_ok "检测到 Node.js $NODE_VER"
+            HAS_NODE=true
+        fi
     else
         print_warn "未检测到 Node.js"
         echo ""
