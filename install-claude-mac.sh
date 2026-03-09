@@ -324,8 +324,11 @@ if [ "$SKIP_INSTALL" != true ]; then
     # 检查是否已安装 Node.js 和 npm
     if command -v node &>/dev/null && command -v npm &>/dev/null; then
         NODE_VER=$(node --version 2>/dev/null)
-        NODE_MAJOR=$(echo "$NODE_VER" | sed 's/v//' | cut -d. -f1)
-        if [ "$NODE_MAJOR" -lt 20 ]; then
+        NODE_MAJOR=$(node -e "process.stdout.write(String(process.versions.node.split('.')[0]))" 2>/dev/null)
+        if [ -z "$NODE_MAJOR" ]; then
+            NODE_MAJOR=$(echo "$NODE_VER" | tr -d 'v' | cut -d. -f1)
+        fi
+        if [ -n "$NODE_MAJOR" ] && [ "$NODE_MAJOR" -lt 20 ] 2>/dev/null; then
             print_warn "检测到 Node.js $NODE_VER（版本过旧，需要 v20 或更高版本）"
             echo ""
             echo -e "  ${YELLOW}Claude Code 最新版本需要 Node.js v20+，当前版本不兼容${NC}"
@@ -340,9 +343,21 @@ if [ "$SKIP_INSTALL" != true ]; then
             fi
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
+            # 清除 .npmrc 中与 nvm 冲突的 prefix 设置
+            if [ -f "$HOME/.npmrc" ]; then
+                sed -i.bak '/^prefix=/d' "$HOME/.npmrc"
+                sed -i.bak '/^globalconfig=/d' "$HOME/.npmrc"
+                print_info "已清除 .npmrc 中与 nvm 冲突的 prefix 设置"
+            fi
+
             print_info "正在安装 Node.js LTS 版本（v20+）..."
             export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
-            if nvm install --lts && nvm use --lts; then
+            LTS_VER=$(nvm version-remote --lts 2>/dev/null)
+            if nvm install --lts && nvm use --delete-prefix "$LTS_VER" --silent 2>/dev/null; then
+                NODE_VER=$(node --version 2>/dev/null)
+                print_ok "Node.js 已升级至 $NODE_VER"
+                HAS_NODE=true
+            elif nvm use --lts 2>/dev/null; then
                 NODE_VER=$(node --version 2>/dev/null)
                 print_ok "Node.js 已升级至 $NODE_VER"
                 HAS_NODE=true
