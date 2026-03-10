@@ -424,9 +424,7 @@ if [ "$SKIP_INSTALL" != true ]; then
                 print_ok "Node.js ${NODE_VER} 安装成功！"
                 HAS_NODE=true
 
-                # 写入 shell 配置，使 PATH 永久生效
-                SHELL_CONFIG="$HOME/.zshrc"
-                [ -n "$BASH_VERSION" ] && SHELL_CONFIG="$HOME/.bashrc"
+                # 写入 shell 配置，使 PATH 永久生效（SHELL_CONFIG 已在脚本顶部定义）
                 NODE_PATH_LINE='export PATH="$HOME/.local/node/bin:$PATH"'
                 grep -qF "$NODE_PATH_LINE" "$SHELL_CONFIG" 2>/dev/null || echo "$NODE_PATH_LINE" >> "$SHELL_CONFIG"
             else
@@ -444,12 +442,6 @@ if [ "$SKIP_INSTALL" != true ]; then
     # 使用 npm 安装
     print_info "使用 npm 安装 Claude Code..."
     echo ""
-
-    # 确保 SHELL_CONFIG 已定义（可能用户已有 Node.js，跳过了安装分支）
-    if [ -z "$SHELL_CONFIG" ]; then
-        SHELL_CONFIG="$HOME/.zshrc"
-        [ -n "$BASH_VERSION" ] && SHELL_CONFIG="$HOME/.bashrc"
-    fi
 
     # 检查当前 npm prefix 配置
     CURRENT_PREFIX=$(npm config get prefix 2>/dev/null)
