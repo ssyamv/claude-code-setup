@@ -473,8 +473,10 @@ if [ "$SKIP_INSTALL" != true ]; then
 
     # 统一确保 npm prefix bin 目录写入 shell 配置（无论哪种情况）
     NPM_BIN_DIR="$CURRENT_PREFIX/bin"
-    NPM_PATH_LINE="export PATH=\"$NPM_BIN_DIR:\$PATH\""
-    if ! grep -qF "$NPM_BIN_DIR" "$SHELL_CONFIG" 2>/dev/null; then
+    # 写入 .zshrc 时用 $HOME 替换实际路径，避免硬编码用户名
+    NPM_BIN_DIR_PORTABLE="${NPM_BIN_DIR/#$HOME/\$HOME}"
+    NPM_PATH_LINE="export PATH=\"${NPM_BIN_DIR_PORTABLE}:\$PATH\""
+    if ! grep -qF "$NPM_BIN_DIR_PORTABLE" "$SHELL_CONFIG" 2>/dev/null; then
         echo "$NPM_PATH_LINE" >> "$SHELL_CONFIG"
     fi
     export PATH="$NPM_BIN_DIR:$PATH"
