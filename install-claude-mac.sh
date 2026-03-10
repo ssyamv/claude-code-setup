@@ -8,13 +8,10 @@
 # =============================================================================
 
 # ---- 检测 Shell 配置文件 ----
-if [[ "$SHELL" == *"zsh"* ]]; then
-    SHELL_CONFIG="$HOME/.zshrc"
-elif [[ "$SHELL" == *"bash"* ]]; then
-    SHELL_CONFIG="$HOME/.bash_profile"
-else
-    SHELL_CONFIG="$HOME/.profile"
-fi
+# 注意：脚本通过 curl | bash 运行时 $SHELL 是 bash，不能用来判断用户实际使用的 shell
+# macOS 默认 shell 是 zsh，同时写入 .zshrc 和 .bash_profile 确保都能生效
+SHELL_CONFIG="$HOME/.zshrc"
+SHELL_CONFIG_BASH="$HOME/.bash_profile"
 
 # ---- 颜色定义 ----
 RED='\033[0;31m'
@@ -424,9 +421,10 @@ if [ "$SKIP_INSTALL" != true ]; then
                 print_ok "Node.js ${NODE_VER} 安装成功！"
                 HAS_NODE=true
 
-                # 写入 shell 配置，使 PATH 永久生效（SHELL_CONFIG 已在脚本顶部定义）
+                # 写入 shell 配置，使 PATH 永久生效（同时写入 zshrc 和 bash_profile）
                 NODE_PATH_LINE='export PATH="$HOME/.local/node/bin:$PATH"'
                 grep -qF "$NODE_PATH_LINE" "$SHELL_CONFIG" 2>/dev/null || echo "$NODE_PATH_LINE" >> "$SHELL_CONFIG"
+                grep -qF "$NODE_PATH_LINE" "$SHELL_CONFIG_BASH" 2>/dev/null || echo "$NODE_PATH_LINE" >> "$SHELL_CONFIG_BASH"
             else
                 print_error "Node.js 安装失败"
                 exit 1
@@ -470,6 +468,9 @@ if [ "$SKIP_INSTALL" != true ]; then
     NPM_PATH_LINE="export PATH=\"${NPM_BIN_DIR_PORTABLE}:\$PATH\""
     if ! grep -qF "$NPM_BIN_DIR_PORTABLE" "$SHELL_CONFIG" 2>/dev/null; then
         echo "$NPM_PATH_LINE" >> "$SHELL_CONFIG"
+    fi
+    if ! grep -qF "$NPM_BIN_DIR_PORTABLE" "$SHELL_CONFIG_BASH" 2>/dev/null; then
+        echo "$NPM_PATH_LINE" >> "$SHELL_CONFIG_BASH"
     fi
     export PATH="$NPM_BIN_DIR:$PATH"
 
