@@ -445,6 +445,12 @@ if [ "$SKIP_INSTALL" != true ]; then
     print_info "使用 npm 安装 Claude Code..."
     echo ""
 
+    # 确保 SHELL_CONFIG 已定义（可能用户已有 Node.js，跳过了安装分支）
+    if [ -z "$SHELL_CONFIG" ]; then
+        SHELL_CONFIG="$HOME/.zshrc"
+        [ -n "$BASH_VERSION" ] && SHELL_CONFIG="$HOME/.bashrc"
+    fi
+
     # 检查当前 npm prefix 配置
     CURRENT_PREFIX=$(npm config get prefix 2>/dev/null)
 
@@ -457,18 +463,21 @@ if [ "$SKIP_INSTALL" != true ]; then
         print_info "正在配置 npm 使用用户目录..."
         mkdir -p "$HOME/.npm-global"
         npm config set prefix "$HOME/.npm-global" 2>/dev/null
-
-        # 添加到 PATH
-        if ! grep -q "/.npm-global/bin" "$SHELL_CONFIG" 2>/dev/null; then
-            echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$SHELL_CONFIG"
-        fi
-        export PATH="$HOME/.npm-global/bin:$PATH"
+        CURRENT_PREFIX="$HOME/.npm-global"
         print_ok "npm 已配置为使用用户目录（~/.npm-global）"
         echo ""
     else
         print_ok "npm 配置检查通过"
         echo ""
     fi
+
+    # 统一确保 npm prefix bin 目录写入 shell 配置（无论哪种情况）
+    NPM_BIN_DIR="$CURRENT_PREFIX/bin"
+    NPM_PATH_LINE="export PATH=\"$NPM_BIN_DIR:\$PATH\""
+    if ! grep -qF "$NPM_BIN_DIR" "$SHELL_CONFIG" 2>/dev/null; then
+        echo "$NPM_PATH_LINE" >> "$SHELL_CONFIG"
+    fi
+    export PATH="$NPM_BIN_DIR:$PATH"
 
     # 配置 npm 使用国内镜像源（淘宝镜像）
     print_info "正在配置 npm 国内镜像源..."
