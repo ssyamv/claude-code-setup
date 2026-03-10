@@ -397,39 +397,45 @@ if [ "$SKIP_INSTALL" != true ]; then
         print_info "正在安装 Node.js（无需管理员权限）..."
         echo ""
 
-        # 使用 nvm 安装 Node.js（无需管理员权限）
-        print_info "使用 nvm 安装 Node.js..."
-
-        NVM_INSTALL_SCRIPT=$(curl -fsSL https://gitee.com/mirrors/nvm/raw/v0.40.1/install.sh 2>&1)
-        if [ $? -ne 0 ] || [ -z "$NVM_INSTALL_SCRIPT" ]; then
-            print_error "nvm 安装脚本下载失败"
-            echo ""
-            echo -e "  ${YELLOW}请检查网络连接后重试${NC}"
-            exit 1
+        # 直接从国内镜像下载 Node.js 二进制包，不依赖 nvm/GitHub
+        NODE_VERSION="v20.18.1"
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "arm64" ]; then
+            NODE_ARCH="arm64"
+        else
+            NODE_ARCH="x64"
         fi
-        if echo "$NVM_INSTALL_SCRIPT" | bash; then
-            print_ok "nvm 安装成功！"
-            echo ""
+        NODE_PKG="node-${NODE_VERSION}-darwin-${NODE_ARCH}"
+        NODE_URL="https://npmmirror.com/mirrors/node/${NODE_VERSION}/${NODE_PKG}.tar.gz"
+        NODE_INSTALL_DIR="$HOME/.local/node"
 
-            # 加载 nvm
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        print_info "从国内镜像下载 Node.js ${NODE_VERSION}（${NODE_ARCH}）..."
+        mkdir -p "$NODE_INSTALL_DIR"
+        TMP_TAR=$(mktemp /tmp/node-XXXXXX.tar.gz)
 
-            print_info "正在安装 Node.js LTS 版本..."
-            export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
-            if nvm install --lts && nvm use --lts; then
-                print_ok "Node.js 安装成功！"
-                NODE_VER=$(node --version 2>/dev/null)
-                print_ok "当前版本：$NODE_VER"
+        if curl -fsSL --progress-bar "$NODE_URL" -o "$TMP_TAR"; then
+            tar -xzf "$TMP_TAR" -C "$NODE_INSTALL_DIR" --strip-components=1
+            rm -f "$TMP_TAR"
+
+            export PATH="$NODE_INSTALL_DIR/bin:$PATH"
+            NODE_VER=$(node --version 2>/dev/null)
+
+            if [ -n "$NODE_VER" ]; then
+                print_ok "Node.js ${NODE_VER} 安装成功！"
                 HAS_NODE=true
+
+                # 写入 shell 配置，使 PATH 永久生效
+                SHELL_CONFIG="$HOME/.zshrc"
+                [ -n "$BASH_VERSION" ] && SHELL_CONFIG="$HOME/.bashrc"
+                NODE_PATH_LINE='export PATH="$HOME/.local/node/bin:$PATH"'
+                grep -qF "$NODE_PATH_LINE" "$SHELL_CONFIG" 2>/dev/null || echo "$NODE_PATH_LINE" >> "$SHELL_CONFIG"
             else
                 print_error "Node.js 安装失败"
                 exit 1
             fi
         else
-            print_error "nvm 安装失败"
-            echo ""
-            echo -e "  ${YELLOW}请检查网络连接后重试${NC}"
+            rm -f "$TMP_TAR"
+            print_error "Node.js 下载失败，请检查网络连接后重试"
             exit 1
         fi
         echo ""
