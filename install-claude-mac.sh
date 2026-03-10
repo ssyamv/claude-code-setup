@@ -339,7 +339,12 @@ if [ "$SKIP_INSTALL" != true ]; then
             export NVM_DIR="$HOME/.nvm"
             if [ ! -s "$NVM_DIR/nvm.sh" ]; then
                 print_info "正在安装 nvm..."
-                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+                NVM_INSTALL_SCRIPT=$(curl -fsSL https://gitee.com/mirrors/nvm/raw/v0.40.1/install.sh 2>&1)
+                if [ $? -ne 0 ] || [ -z "$NVM_INSTALL_SCRIPT" ]; then
+                    print_error "nvm 安装脚本下载失败，请检查网络连接"
+                    exit 1
+                fi
+                echo "$NVM_INSTALL_SCRIPT" | bash
             fi
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
@@ -395,7 +400,14 @@ if [ "$SKIP_INSTALL" != true ]; then
         # 使用 nvm 安装 Node.js（无需管理员权限）
         print_info "使用 nvm 安装 Node.js..."
 
-        if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash; then
+        NVM_INSTALL_SCRIPT=$(curl -fsSL https://gitee.com/mirrors/nvm/raw/v0.40.1/install.sh 2>&1)
+        if [ $? -ne 0 ] || [ -z "$NVM_INSTALL_SCRIPT" ]; then
+            print_error "nvm 安装脚本下载失败"
+            echo ""
+            echo -e "  ${YELLOW}请检查网络连接后重试${NC}"
+            exit 1
+        fi
+        if echo "$NVM_INSTALL_SCRIPT" | bash; then
             print_ok "nvm 安装成功！"
             echo ""
 
